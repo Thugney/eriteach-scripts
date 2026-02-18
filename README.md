@@ -32,6 +32,8 @@ Scripts are referenced from [blog.eriteach.com](https://blog.eriteach.com). Each
 | `primaryuser-restriction-remediation.ps1` | Restricts login to only primary user + Administrators |
 | `diskspace-detection.ps1` | Detects low disk space using dual thresholds (15GB and 10%) |
 | `diskspace-remediation.ps1` | Silently cleans temp files, caches, logs, and recycle bin |
+| `m365apps-channel-switch-detection.ps1` | Detects wrong M365 Apps update channel and blocking GPO registry keys |
+| `m365apps-channel-switch-remediation.ps1` | Switches M365 Apps to Monthly Enterprise Channel and removes blocking keys |
 
 ### Deployment
 
