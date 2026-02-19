@@ -7,6 +7,7 @@ PowerShell scripts for Intune, Autopilot, and Microsoft 365 management.
 ```
 intune/
   remediations/     # Proactive remediation scripts (detection + remediation pairs)
+  win32/            # Win32 app scripts (detection + install pairs)
 deployment/         # OS deployment and imaging scripts
 ```
 
@@ -35,8 +36,16 @@ Scripts are referenced from [blog.eriteach.com](https://blog.eriteach.com). Each
 | `m365apps-channel-switch-detection.ps1` | Detects wrong M365 Apps update channel and blocking GPO registry keys |
 | `m365apps-channel-switch-remediation.ps1` | Switches M365 Apps to Monthly Enterprise Channel and removes blocking keys |
 
+### Intune Win32 Apps
+
+| Script | Purpose |
+|--------|---------|
+| `Detect-Bloatware.ps1` | Win32 detection script - checks for bloatware apps and registry settings |
+| `Remove-Bloatware.ps1` | Win32 install script - removes 119+ bloatware apps and applies registry hardening |
+
 ### Deployment
 
 | Script | Purpose |
 |--------|---------|
 | `inject-wifi-drivers.ps1` | Injects HP WiFi drivers into Windows 11 install.wim for offline deployment |
+| `Build-ISO.ps1` | Creates debloated Windows 11 ISOs with HP WiFi drivers, registry tweaks, and OOBE skip for Autopilot |
