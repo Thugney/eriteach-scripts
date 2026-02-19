@@ -3,7 +3,7 @@
 [![GitHub](https://img.shields.io/badge/GitHub-Thugney-181717?style=flat&logo=github)](https://github.com/Thugney)
 [![Blog](https://img.shields.io/badge/Blog-eriteach.com-0d9488?style=flat&logo=hugo)](https://blog.eriteach.com)
 [![YouTube](https://img.shields.io/badge/YouTube-Eriteach-FF0000?style=flat&logo=youtube)](https://www.youtube.com/@eriteach)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Robel_Mehari-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/robel-mehari-intune/)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Eriteach-0A66C2?style=flat&logo=linkedin)](https://www.linkedin.com/in/eriteach/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 PowerShell scripts for **Intune**, **Autopilot**, and **Microsoft 365** management. Built for real-world enterprise environments.
@@ -23,6 +23,8 @@ eriteach-scripts/
 │   └── win32/            # Win32 app scripts (detection + install pairs)
 ├── deployment/           # OS deployment and imaging scripts
 ├── autopilot/            # Autopilot-related scripts
+├── defender/             # Microsoft Defender scripts
+├── purview/              # Microsoft Purview scripts
 └── graph/                # Microsoft Graph API scripts
 ```
 
@@ -87,6 +89,7 @@ Intune Run Context: System | User
 
 - [blog.eriteach.com](https://blog.eriteach.com) - Technical blog with detailed guides
 - [YouTube: Eriteach](https://www.youtube.com/@eriteach) - Video tutorials (20,000+ subscribers)
+- [TenantScope](https://github.com/Thugney/TenantScope) - M365 Tenant Toolkit for tenant management
 
 ## License
 
