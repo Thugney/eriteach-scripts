@@ -735,18 +735,21 @@ function New-AutounattendXml {
         <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64"
                    publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
             <OOBE>
+                <!-- Autopilot-compatible OOBE settings -->
                 <HideEULAPage>true</HideEULAPage>
                 <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
-                <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+                <!-- DO NOT HIDE - Required for Autopilot Entra ID sign-in! -->
+                <HideOnlineAccountScreens>false</HideOnlineAccountScreens>
+                <!-- Hide local account - force Entra ID sign-in -->
                 <HideLocalAccountScreen>true</HideLocalAccountScreen>
+                <!-- SHOW WiFi - Required for Autopilot enrollment! -->
                 <HideWirelessSetupInOOBE>false</HideWirelessSetupInOOBE>
+                <!-- Skip privacy settings (Intune policies will configure these) -->
                 <ProtectYourPC>3</ProtectYourPC>
-                <SkipMachineOOBE>true</SkipMachineOOBE>
-                <SkipUserOOBE>true</SkipUserOOBE>
+                <!-- DO NOT skip these - Autopilot needs Machine and User OOBE phases -->
+                <!-- <SkipMachineOOBE>true</SkipMachineOOBE> -->
+                <!-- <SkipUserOOBE>true</SkipUserOOBE> -->
                 <UnattendEnableRetailDemo>false</UnattendEnableRetailDemo>
-                <VMModeOptimizations>
-                    <SkipNotifyUILanguageChange>true</SkipNotifyUILanguageChange>
-                </VMModeOptimizations>
             </OOBE>
             <TimeZone>$($Locale.TimeZone)</TimeZone>
             <FirstLogonCommands>
