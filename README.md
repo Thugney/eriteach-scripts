@@ -21,12 +21,10 @@ eriteach-scripts/
 ├── intune/
 │   ├── remediations/     # Proactive remediation scripts (detection + remediation pairs)
 │   └── win32/            # Win32 app scripts (detection + install pairs)
-├── deployment/           # OS deployment and imaging scripts
-├── autopilot/            # Autopilot-related scripts
-├── defender/             # Microsoft Defender scripts
-├── purview/              # Microsoft Purview scripts
-└── graph/                # Microsoft Graph API scripts
+└── deployment/           # OS deployment and imaging scripts
 ```
+
+*More folders (autopilot, defender, purview, graph) will be added as content grows.*
 
 ## Scripts
 
@@ -57,7 +55,9 @@ eriteach-scripts/
 | Script | Purpose |
 |--------|---------|
 | [`inject-wifi-drivers.ps1`](deployment/inject-wifi-drivers.ps1) | Injects HP WiFi drivers into Windows 11 install.wim |
-| [`Build-ISO.ps1`](deployment/Build-ISO.ps1) | Creates debloated Windows 11 ISOs with WiFi drivers and OOBE skip |
+| [`Build-ISO.ps1`](deployment/Build-ISO.ps1) | Creates debloated Windows 11 ISOs with WiFi drivers and Autopilot-compatible OOBE |
+| [`autounattend-education.xml`](deployment/autounattend-education.xml) | Autopilot-compatible autounattend for Windows 11 Education |
+| [`autounattend-enterprise.xml`](deployment/autounattend-enterprise.xml) | Autopilot-compatible autounattend for Windows 11 Enterprise |
 
 ## Usage
 

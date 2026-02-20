@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+============================================================================
+Eriteach Scripts
+Author: Robel (https://github.com/Thugney)
+Repository: https://github.com/Thugney/eriteach-scripts
+License: MIT
+
+Autopilot-compatible autounattend.xml for Windows 11 Education
+- Skips non-essential OOBE screens (EULA, OEM registration, privacy)
+- Preserves Autopilot enrollment flow (online account, machine/user OOBE)
+- Norwegian locale settings (nb-NO)
+============================================================================
+-->
+<unattend xmlns="urn:schemas-microsoft-com:unattend">
+    <settings pass="windowsPE">
+        <component name="Microsoft-Windows-International-Core-WinPE" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <SetupUILanguage>
+                <UILanguage>nb-NO</UILanguage>
+            </SetupUILanguage>
+            <InputLocale>0414:00000414</InputLocale>
+            <SystemLocale>nb-NO</SystemLocale>
+            <UILanguage>nb-NO</UILanguage>
+            <UserLocale>nb-NO</UserLocale>
+        </component>
+        <component name="Microsoft-Windows-Setup" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <ImageInstall>
+                <OSImage>
+                    <InstallFrom>
+                        <MetaData wcm:action="add">
+                            <Key>/IMAGE/NAME</Key>
+                            <Value>Windows 11 Education</Value>
+                        </MetaData>
+                    </InstallFrom>
+                    <InstallTo>
+                        <DiskID>0</DiskID>
+                        <PartitionID>3</PartitionID>
+                    </InstallTo>
+                </OSImage>
+            </ImageInstall>
+            <DiskConfiguration>
+                <Disk wcm:action="add">
+                    <DiskID>0</DiskID>
+                    <WillWipeDisk>true</WillWipeDisk>
+                    <CreatePartitions>
+                        <CreatePartition wcm:action="add">
+                            <Order>1</Order>
+                            <Size>100</Size>
+                            <Type>EFI</Type>
+                        </CreatePartition>
+                        <CreatePartition wcm:action="add">
+                            <Order>2</Order>
+                            <Size>16</Size>
+                            <Type>MSR</Type>
+                        </CreatePartition>
+                        <CreatePartition wcm:action="add">
+                            <Order>3</Order>
+                            <Extend>true</Extend>
+                            <Type>Primary</Type>
+                        </CreatePartition>
+                    </CreatePartitions>
+                    <ModifyPartitions>
+                        <ModifyPartition wcm:action="add">
+                            <Order>1</Order>
+                            <PartitionID>1</PartitionID>
+                            <Format>FAT32</Format>
+                            <Label>System</Label>
+                        </ModifyPartition>
+                        <ModifyPartition wcm:action="add">
+                            <Order>2</Order>
+                            <PartitionID>2</PartitionID>
+                        </ModifyPartition>
+                        <ModifyPartition wcm:action="add">
+                            <Order>3</Order>
+                            <PartitionID>3</PartitionID>
+                            <Format>NTFS</Format>
+                            <Label>Windows</Label>
+                        </ModifyPartition>
+                    </ModifyPartitions>
+                </Disk>
+            </DiskConfiguration>
+            <UserData>
+                <ProductKey>
+                    <!-- Windows 11 Education Generic Key -->
+                    <Key>NW6C2-QMPVW-D7KKK-3GKT6-VCFB2</Key>
+                    <WillShowUI>OnError</WillShowUI>
+                </ProductKey>
+                <AcceptEula>true</AcceptEula>
+            </UserData>
+        </component>
+    </settings>
+    <settings pass="specialize">
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <TimeZone>W. Europe Standard Time</TimeZone>
+        </component>
+        <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <InputLocale>0414:00000414</InputLocale>
+            <SystemLocale>nb-NO</SystemLocale>
+            <UILanguage>nb-NO</UILanguage>
+            <UserLocale>nb-NO</UserLocale>
+        </component>
+        <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <RunSynchronous>
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>1</Order>
+                    <Path>reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot" /v TurnOffWindowsCopilot /t REG_DWORD /d 1 /f</Path>
+                    <Description>Disable Windows Copilot</Description>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>2</Order>
+                    <Path>reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v AllowNewsAndInterests /t REG_DWORD /d 0 /f</Path>
+                    <Description>Disable Widgets</Description>
+                </RunSynchronousCommand>
+            </RunSynchronous>
+        </component>
+    </settings>
+    <settings pass="oobeSystem">
+        <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <OOBE>
+                <!-- === AUTOPILOT-COMPATIBLE OOBE SETTINGS === -->
+                <!-- Only skip non-essential screens, let Autopilot handle enrollment -->
+
+                <!-- Skip license agreement -->
+                <HideEULAPage>true</HideEULAPage>
+                <!-- Skip OEM registration -->
+                <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
+
+                <!-- DO NOT HIDE - Required for Autopilot Entra ID sign-in! -->
+                <HideOnlineAccountScreens>false</HideOnlineAccountScreens>
+
+                <!-- Hide local account - force Entra ID sign-in -->
+                <HideLocalAccountScreen>true</HideLocalAccountScreen>
+
+                <!-- SHOW WiFi - Required for Autopilot enrollment! -->
+                <HideWirelessSetupInOOBE>false</HideWirelessSetupInOOBE>
+
+                <!-- Skip privacy settings (Intune policies will configure these) -->
+                <ProtectYourPC>3</ProtectYourPC>
+
+                <!-- DO NOT SKIP Machine OOBE - Autopilot needs this phase! -->
+                <!-- <SkipMachineOOBE>true</SkipMachineOOBE> -->
+
+                <!-- DO NOT SKIP User OOBE - Autopilot enrollment happens here! -->
+                <!-- <SkipUserOOBE>true</SkipUserOOBE> -->
+
+                <!-- Disable retail demo mode -->
+                <UnattendEnableRetailDemo>false</UnattendEnableRetailDemo>
+
+                <!-- Skip network location wizard -->
+                <NetworkLocation>Work</NetworkLocation>
+            </OOBE>
+            <TimeZone>W. Europe Standard Time</TimeZone>
+            <FirstLogonCommands>
+                <SynchronousCommand wcm:action="add">
+                    <Order>1</Order>
+                    <CommandLine>powershell -NoProfile -Command "Get-AppxPackage -AllUsers *Microsoft.Copilot* | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue"</CommandLine>
+                    <Description>Remove Copilot if reinstalled</Description>
+                    <RequiresUserInput>false</RequiresUserInput>
+                </SynchronousCommand>
+            </FirstLogonCommands>
+        </component>
+        <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64"
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
+                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <InputLocale>0414:00000414</InputLocale>
+            <SystemLocale>nb-NO</SystemLocale>
+            <UILanguage>nb-NO</UILanguage>
+            <UserLocale>nb-NO</UserLocale>
+        </component>
+    </settings>
+</unattend>
