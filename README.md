@@ -90,6 +90,7 @@ Intune Run Context: System | User
 - [blog.eriteach.com](https://blog.eriteach.com) - Technical blog with detailed guides
 - [YouTube: Eriteach](https://www.youtube.com/@eriteach) - Video tutorials (20,000+ subscribers)
 - [TenantScope](https://github.com/Thugney/TenantScope) - M365 Tenant Toolkit for tenant management
+- [Intune-AdmxToSettingsCatalog-Migrator](https://github.com/Thugney/Intune-AdmxToSettingsCatalog-Migrator) - Migrate ADMX-backed policies to Settings Catalog
 
 ## License
 
