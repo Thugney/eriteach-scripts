@@ -1,18 +1,19 @@
 <#
 .SYNOPSIS
-    Injects HP WiFi drivers into Windows 11 install.wim for offline deployment.
+    Injects HP WiFi, Touchpad, and Audio drivers into Windows 11 install.wim for offline deployment.
 
 .DESCRIPTION
-    Downloads WiFi drivers directly from HP FTP and injects them into install.wim.
-    Solves the problem of no WiFi during Windows setup/Autopilot enrollment after reset.
+    Downloads drivers directly from HP FTP and injects them into install.wim.
+    Solves the problem of no WiFi/mouse/audio during Windows setup/Autopilot enrollment after reset.
 
     Supports:
     - Realtek RTL8852/8822/8821 WiFi
-    - Intel Wi-Fi 6E AX211
-    - HP ProBook G10 driver pack
-    - HP WinPE driver pack
+    - Intel Wi-Fi 6E AX211/AX201/AX200
+    - Synaptics/ELAN Precision Touchpad
+    - Realtek HD Audio (G5/G6/G11 models)
 
     Does NOT require HP CMSL - uses direct download from HP FTP.
+    Uses targeted drivers only (not full driver packs) to keep ISO size manageable.
 
 .PARAMETER ISOPath
     Path to Windows 11 ISO file or folder with extracted ISO content.
@@ -193,27 +194,40 @@ function Get-WiFiDrivers {
         New-Item -Path $driverPath -ItemType Directory -Force | Out-Null
     }
 
-    # Direct HP Softpaq URLs - verified working from HP FTP
+    # HP Softpaq URLs - WiFi + Touchpad + Audio (verified working March 2026)
     $driverSources = @(
+        # --- WiFi Drivers (verified working) ---
         @{
             Name = "Realtek RTL8852/8822/8821 WiFi"
             URL = "https://ftp.hp.com/pub/softpaq/sp155001-155500/sp155482.exe"
             Folder = "Realtek_WiFi"
         },
         @{
-            Name = "Intel Wi-Fi 6E AX211"
+            Name = "Intel Wi-Fi 6E AX211/AX201/AX200"
             URL = "https://ftp.hp.com/pub/softpaq/sp138501-139000/sp138607.exe"
-            Folder = "Intel_AX211"
+            Folder = "Intel_WiFi"
+        },
+        # --- Touchpad Drivers (verified working) ---
+        @{
+            Name = "Synaptics/ELAN Precision Touchpad"
+            URL = "https://ftp.hp.com/pub/softpaq/sp139001-139500/sp139125.exe"
+            Folder = "Synaptics_ELAN_Touchpad"
         },
         @{
-            Name = "HP ProBook G10 Driver Pack"
-            URL = "https://ftp.hp.com/pub/softpaq/sp145001-145500/sp145027.exe"
-            Folder = "HP_ProBook_G10_Pack"
+            Name = "ELAN Precision Touchpad Filter"
+            URL = "https://ftp.hp.com/pub/softpaq/sp134001-134500/sp134374.exe"
+            Folder = "ELAN_Touchpad"
+        },
+        # --- Audio Drivers (verified working) ---
+        @{
+            Name = "Realtek Audio (G11 models)"
+            URL = "https://ftp.hp.com/pub/softpaq/sp157001-157500/sp157064.exe"
+            Folder = "Realtek_Audio_G11"
         },
         @{
-            Name = "HP WinPE 10/11 Driver Pack"
-            URL = "https://ftp.hp.com/pub/softpaq/sp155501-156000/sp155634.exe"
-            Folder = "HP_WinPE_Drivers"
+            Name = "Realtek HD Audio (G5/G6 models)"
+            URL = "https://ftp.hp.com/pub/softpaq/sp154001-154500/sp154106.exe"
+            Folder = "Realtek_Audio_G5G6"
         }
     )
 

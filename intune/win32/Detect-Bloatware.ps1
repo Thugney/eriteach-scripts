@@ -1,26 +1,29 @@
-# ============================================================================
-# Eriteach Scripts
-# Author: Robel (https://github.com/Thugney)
-# Repository: https://github.com/Thugney/eriteach-scripts
-# License: MIT
-# ============================================================================
-
 <#
 .SYNOPSIS
-Detects if bloatware is present on the device.
+    Detects if bloatware is present on the device.
 
 .DESCRIPTION
-Win32 App Detection Script for Intune. Checks for key bloatware apps
-and registry settings. Returns exit 0 if clean (app "installed"),
-exit 1 if bloatware found (needs remediation).
+    Win32 App Detection Script for Intune.
+    Checks for key bloatware apps and registry settings.
+
+    Exit Codes:
+    - Exit 0 = Bloatware NOT found (compliant - app "installed")
+    - Exit 1 = Bloatware FOUND (non-compliant - needs remediation)
 
 .NOTES
-Author: Eriteach
-Version: 2.0
-Intune Run Context: System
+    Author: robwol
+    Version: 2.0
+    Deployment: Win32 App Detection Script
+    Context: System
+
+    IMPORTANT: This list must match Remove-Bloatware.ps1 and Config-AppList.ps1
 #>
 
-# Key apps for detection (subset for fast check)
+
+# KEY APPS FOR DETECTION (Subset for fast check)
+# If ANY of these exist, device needs remediation
+# Must match Config-AppList.ps1
+
 $KeyAppsForDetection = @(
     "Microsoft.BingNews"
     "Microsoft.BingWeather"
@@ -32,7 +35,13 @@ $KeyAppsForDetection = @(
     "Microsoft.GamingApp"
     "Microsoft.XboxApp"
     "king.com.CandyCrushSaga"
+    # NOTE: These apps are checked but some may be protected and cannot be removed
+    # Detection only includes apps that CAN actually be removed
 )
+
+
+# DETECTION LOGIC
+
 
 $bloatwareFound = $false
 
@@ -87,11 +96,17 @@ if (-not $bloatwareFound) {
     }
 }
 
-# Exit codes
+
+# EXIT
+
 if ($bloatwareFound) {
-    exit 1  # Not installed = needs remediation
+    # Bloatware exists - remediation needed
+    # Win32 detection: Exit 1 = "Not Installed" = Run install/remediation
+    exit 1
 }
 else {
+    # System is clean
     Write-Output "System is clean - no bloatware detected"
-    exit 0  # Installed = compliant
+    # Win32 detection: Exit 0 = "Installed" = No action needed
+    exit 0
 }

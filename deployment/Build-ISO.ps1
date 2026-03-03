@@ -1,47 +1,40 @@
-# ============================================================================
-# Eriteach Scripts
-# Author: Robel (https://github.com/Thugney)
-# Repository: https://github.com/Thugney/eriteach-scripts
-# License: MIT
-# ============================================================================
-
 <#
 .SYNOPSIS
-Builds customized, debloated Windows 11 ISOs for organizational deployment.
+    Builds customized, debloated Windows 11 ISOs for organizational deployment.
 
 .DESCRIPTION
-Creates streamlined Windows 11 ISOs for Intune/Autopilot deployment:
-- Removes bloatware at the ISO level (no post-install remediation needed)
-- Injects HP WiFi drivers for Autopilot enrollment
-- Applies registry tweaks (telemetry, ads, consumer features)
-- Includes autounattend.xml for OOBE skip
-- Produces separate ISOs for Education and Enterprise editions
+    Creates streamlined Windows 11 ISOs for Intune/Autopilot deployment:
+    - Removes bloatware at the ISO level (no post-install remediation needed)
+    - Injects HP WiFi drivers for Autopilot enrollment
+    - Applies registry tweaks (telemetry, ads, consumer features)
+    - Includes autounattend.xml for OOBE skip
+    - Produces separate ISOs for Education and Enterprise editions
 
 .PARAMETER SourceISO
-Path to the source Windows 11 ISO file.
+    Path to the source Windows 11 ISO file.
 
 .PARAMETER OutputFolder
-Folder where the customized ISOs will be saved.
+    Folder where the customized ISOs will be saved.
 
 .PARAMETER Edition
-Which edition to build: "Education", "Enterprise", or "Both"
+    Which edition to build: "Education", "Enterprise", or "Both"
 
 .PARAMETER SkipDrivers
-Skip HP WiFi driver injection (for testing).
+    Skip HP WiFi driver injection (for testing).
 
 .PARAMETER SkipDebloat
-Skip app removal (for testing).
+    Skip app removal (for testing).
 
 .EXAMPLE
-.\Build-ISO.ps1 -SourceISO "C:\ISOs\Win11_24H2.iso" -OutputFolder "C:\ISOs\Custom" -Edition Both
+    .\Build-ISO.ps1 -SourceISO "C:\ISOs\Win11_24H2.iso" -OutputFolder "C:\ISOs\Custom" -Edition Both
 
 .EXAMPLE
-.\Build-ISO.ps1 -SourceISO "C:\ISOs\Win11_24H2.iso" -OutputFolder "C:\ISOs\Custom" -Edition Education
+    .\Build-ISO.ps1 -SourceISO "C:\ISOs\Win11_24H2.iso" -OutputFolder "C:\ISOs\Custom" -Edition Education
 
 .NOTES
-Author: Eriteach
-Version: 2.0
-Requirements: Windows ADK (DISM), Administrator privileges, ~40GB free space
+    Author: robwol
+    Version: 2.0
+    Requirements: Windows ADK (DISM), Administrator privileges, ~40GB free space
 #>
 
 [CmdletBinding()]
@@ -66,16 +59,19 @@ param(
 
 # ------------------------------------------------------------------------------
 # EDITION CONFIGURATION
+# NOTE: ImageIndex values vary by ISO. To find correct indexes for your ISO:
+#   Mount-DiskImage -ImagePath "C:\Path\To\ISO.iso"
+#   dism /Get-WimInfo /WimFile:"F:\sources\install.wim"
 # ------------------------------------------------------------------------------
 $EditionsConfig = @{
     "Education" = @{
-        ImageIndex       = 9
+        ImageIndex       = 1
         ProductKey       = "NW6C2-QMPVW-D7KKK-3GKT6-VCFB2"
         AutounattendFile = "autounattend-education-oobe.xml"
         OutputName       = "Windows11-Education-Custom.iso"
     }
     "Enterprise" = @{
-        ImageIndex       = 11
+        ImageIndex       = 3
         ProductKey       = "NPPR9-FWDCX-D2C8J-H872K-2YT43"
         AutounattendFile = "autounattend-enterprise-oobe.xml"
         OutputName       = "Windows11-Enterprise-Custom.iso"
@@ -107,14 +103,21 @@ $MicrosoftAppsToRemove = @(
     "Clipchamp.Clipchamp"
     "Microsoft.549981C3F5F10"                # Cortana
     "Microsoft.Getstarted"                   # Tips
+    #"Microsoft.Microsoft3DViewer"
     "Microsoft.MicrosoftJournal"
     "Microsoft.MicrosoftOfficeHub"
     "Microsoft.MicrosoftSolitaireCollection"
+    #"Microsoft.MicrosoftStickyNotes"
+    #"Microsoft.MixedReality.Portal"
     "Microsoft.NetworkSpeedTest"
     "Microsoft.Office.OneNote"               # UWP OneNote (not desktop)
     "Microsoft.Office.Sway"
     "Microsoft.OneConnect"
+    #"Microsoft.Print3D"
     "Microsoft.SkypeApp"
+    #"Microsoft.Todos"
+    #"Microsoft.PowerAutomateDesktop"
+    #"Microsoft.OutlookForWindows"            # New Outlook (if using classic)
 
     # --- Communication ---
     "Microsoft.People"
@@ -133,6 +136,8 @@ $MicrosoftAppsToRemove = @(
     "MicrosoftCorporationII.MicrosoftFamily"
     "MicrosoftCorporationII.QuickAssist"
     "MicrosoftWindows.CrossDevice"
+    #"Microsoft.Windows.PeopleExperienceHost" # cannot remove (0x80070032)
+    #"Windows.CBSPreview" # It is a core component tied to Microsoft.Windows.Client.CBS (Cloud Experience Host), which manages UI elements like the Start menu and search
 
     # --- Teams Personal (NOT Work Teams) ---
     "MicrosoftTeams"                         # Personal Teams from Store
@@ -150,10 +155,26 @@ $MicrosoftAppsToRemove = @(
     "Microsoft.XboxSpeechToTextOverlay"
     "Microsoft.Xbox.TCUI"
     "Microsoft.XboxIdentityProvider"
+    #"Microsoft.XboxGameCallableUI" cannot remove (0x80070032)
+    
+    # --- KEEP THESE (Commented out) ---
+    # "Microsoft.WindowsCalculator"
+    # "Microsoft.WindowsCamera"
+    # "Microsoft.ScreenSketch"
+    # "Microsoft.Windows.Photos"
+    # "Microsoft.WindowsStore"
+    # "Microsoft.WindowsTerminal"
+    # "Microsoft.WindowsNotepad"
+    # "Microsoft.Paint"
+    # "Microsoft.SecHealthUI"
+    # "Microsoft.OneDriveSync"               # OneDrive - WE KEEP
+    # "Microsoft.MicrosoftEdge*"             # Edge - WE KEEP
+    # "MSTeams"                              # Work Teams - WE KEEP (NOT MicrosoftTeams)
 )
 
 
 # THIRD-PARTY APPS TO REMOVE
+# Must match Config-AppList.ps1 and Remove-Bloatware.ps1
 
 $ThirdPartyAppsToRemove = @(
     # --- Entertainment ---
@@ -215,6 +236,8 @@ $ThirdPartyAppsToRemove = @(
 
 
 # OEM APPS TO REMOVE
+# Must match Config-AppList.ps1 and Remove-Bloatware.ps1
+
 
 # HP OEM Bloatware
 $HPAppsToRemove = @(
@@ -261,9 +284,10 @@ $LenovoAppsToRemove = @(
 )
 
 # ------------------------------------------------------------------------------
-# HP WIFI DRIVER SOURCES - Configure per edition
+# HP DRIVER SOURCES - WiFi + Touchpad + Audio (verified working March 2026)
 # ------------------------------------------------------------------------------
 $HPDriverSources = @(
+    # --- WiFi Drivers (verified working) ---
     @{
         Name     = "Realtek RTL8852/8822/8821 WiFi"
         URL      = "https://ftp.hp.com/pub/softpaq/sp155001-155500/sp155482.exe"
@@ -271,22 +295,38 @@ $HPDriverSources = @(
         Editions = @("Education", "Enterprise")
     },
     @{
-        Name     = "Intel Wi-Fi 6E AX211"
+        Name     = "Intel Wi-Fi 6E AX211/AX201/AX200"
         URL      = "https://ftp.hp.com/pub/softpaq/sp138501-139000/sp138607.exe"
-        Folder   = "Intel_AX211"
+        Folder   = "Intel_WiFi"
+        Editions = @("Education", "Enterprise")
+    },
+
+    # --- Touchpad Drivers (verified working) ---
+    @{
+        Name     = "Synaptics/ELAN Precision Touchpad"
+        URL      = "https://ftp.hp.com/pub/softpaq/sp139001-139500/sp139125.exe"
+        Folder   = "Synaptics_ELAN_Touchpad"
         Editions = @("Education", "Enterprise")
     },
     @{
-        Name     = "HP ProBook G10 Driver Pack"
-        URL      = "https://ftp.hp.com/pub/softpaq/sp145001-145500/sp145027.exe"
-        Folder   = "HP_ProBook_G10"
-        Editions = @("Education")
+        Name     = "ELAN Precision Touchpad Filter"
+        URL      = "https://ftp.hp.com/pub/softpaq/sp134001-134500/sp134374.exe"
+        Folder   = "ELAN_Touchpad"
+        Editions = @("Education", "Enterprise")
+    },
+
+    # --- Audio Drivers (verified working) ---
+    @{
+        Name     = "Realtek Audio (G11 models)"
+        URL      = "https://ftp.hp.com/pub/softpaq/sp157001-157500/sp157064.exe"
+        Folder   = "Realtek_Audio_G11"
+        Editions = @("Education", "Enterprise")
     },
     @{
-        Name     = "HP WinPE 10/11 Driver Pack"
-        URL      = "https://ftp.hp.com/pub/softpaq/sp155501-156000/sp155634.exe"
-        Folder   = "HP_WinPE_Drivers"
-        Editions = @("Enterprise")
+        Name     = "Realtek HD Audio (G5/G6 models)"
+        URL      = "https://ftp.hp.com/pub/softpaq/sp154001-154500/sp154106.exe"
+        Folder   = "Realtek_Audio_G5G6"
+        Editions = @("Education", "Enterprise")
     }
 )
 
@@ -294,6 +334,7 @@ $HPDriverSources = @(
 # REGISTRY TWEAKS (Applied to offline image)
 # ------------------------------------------------------------------------------
 $RegistryTweaks = @{
+    # Disable telemetry
     "Telemetry" = @(
         @{ Path = "SOFTWARE\Policies\Microsoft\Windows\DataCollection"; Name = "AllowTelemetry"; Value = 0; Type = "DWord" }
         @{ Path = "SOFTWARE\Policies\Microsoft\Windows\DataCollection"; Name = "DoNotShowFeedbackNotifications"; Value = 1; Type = "DWord" }
@@ -301,20 +342,24 @@ $RegistryTweaks = @{
         @{ Path = "SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo"; Name = "DisabledByGroupPolicy"; Value = 1; Type = "DWord" }
     )
 
+    # Disable Widgets/News
     "Widgets" = @(
         @{ Path = "SOFTWARE\Policies\Microsoft\Dsh"; Name = "AllowNewsAndInterests"; Value = 0; Type = "DWord" }
         @{ Path = "SOFTWARE\Microsoft\PolicyManager\default\NewsAndInterests\AllowNewsAndInterests"; Name = "value"; Value = 0; Type = "DWord" }
     )
 
+    # Disable Windows Copilot (Consumer)
     "Copilot" = @(
         @{ Path = "SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot"; Name = "TurnOffWindowsCopilot"; Value = 1; Type = "DWord" }
     )
 
+    # Disable Bing in Search
     "BingSearch" = @(
         @{ Path = "SOFTWARE\Policies\Microsoft\Windows\Windows Search"; Name = "DisableWebSearch"; Value = 1; Type = "DWord" }
         @{ Path = "SOFTWARE\Policies\Microsoft\Windows\Windows Search"; Name = "ConnectedSearchUseWeb"; Value = 0; Type = "DWord" }
     )
 
+    # Disable suggested apps and ads
     "ContentDelivery" = @(
         @{ Path = "SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"; Name = "ContentDeliveryAllowed"; Value = 0; Type = "DWord" }
         @{ Path = "SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"; Name = "OemPreInstalledAppsEnabled"; Value = 0; Type = "DWord" }
@@ -333,6 +378,7 @@ $RegistryTweaks = @{
         @{ Path = "SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"; Name = "SystemPaneSuggestionsEnabled"; Value = 0; Type = "DWord" }
     )
 
+    # Disable activity history
     "ActivityHistory" = @(
         @{ Path = "SOFTWARE\Policies\Microsoft\Windows\System"; Name = "EnableActivityFeed"; Value = 0; Type = "DWord" }
         @{ Path = "SOFTWARE\Policies\Microsoft\Windows\System"; Name = "PublishUserActivities"; Value = 0; Type = "DWord" }
@@ -349,7 +395,7 @@ $LocaleSettings = @{
     SystemLocale = "nb-NO"
     UserLocale   = "nb-NO"
     TimeZone     = "W. Europe Standard Time"
-    GeoID        = "177"
+    GeoID        = "177"  # Norway
 }
 
 #endregion ============== END CONFIGURATION ==============
@@ -367,6 +413,7 @@ function Write-Log {
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logMessage = "[$timestamp] [$Level] $Message"
 
+    # Ensure log directory exists
     $logDir = Split-Path -Parent $LogPath
     if (-not (Test-Path $logDir)) {
         New-Item -Path $logDir -ItemType Directory -Force | Out-Null
@@ -412,6 +459,7 @@ function Download-File {
     catch {
         Write-Log "  Download failed: $_" -Level "WARNING"
 
+        # Fallback: curl.exe
         try {
             & curl.exe -L -o $OutputPath $Url 2>&1 | Out-Null
             if (Test-Path $OutputPath) {
@@ -432,11 +480,13 @@ function Get-Oscdimg {
 
     $oscdimgPath = Join-Path $DownloadPath "oscdimg.exe"
 
+    # Check if already exists in working directory
     if (Test-Path $oscdimgPath) {
         Write-Log "Using existing oscdimg.exe"
         return $oscdimgPath
     }
 
+    # Check Windows ADK locations
     $adkPaths = @(
         "${env:ProgramFiles(x86)}\Windows Kits\10\Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg\oscdimg.exe",
         "${env:ProgramFiles}\Windows Kits\10\Assessment and Deployment Kit\Deployment Tools\amd64\Oscdimg\oscdimg.exe"
@@ -449,18 +499,32 @@ function Get-Oscdimg {
         }
     }
 
+    # ADK not installed - download and install Deployment Tools only
     Write-Log "Windows ADK not found. Installing Deployment Tools..."
     $adkSetupPath = Join-Path $DownloadPath "adksetup.exe"
     $adkUrl = "https://go.microsoft.com/fwlink/?linkid=2271337"
 
     if (Download-File -Url $adkUrl -OutputPath $adkSetupPath -Description "Windows ADK Setup") {
-        Write-Log "Installing ADK Deployment Tools..."
+        Write-Log "Installing ADK Deployment Tools (this may take a few minutes)..."
 
+        # Install only the Deployment Tools feature silently
         $installArgs = "/quiet /norestart /features OptionId.DeploymentTools"
         $process = Start-Process -FilePath $adkSetupPath -ArgumentList $installArgs -Wait -PassThru -NoNewWindow
 
-        if ($process.ExitCode -eq 0 -or $process.ExitCode -eq 3010) {
+        if ($process.ExitCode -eq 0) {
             Write-Log "ADK Deployment Tools installed" -Level "SUCCESS"
+
+            # Check ADK paths again
+            foreach ($path in $adkPaths) {
+                if (Test-Path $path) {
+                    Write-Log "Found oscdimg.exe: $path"
+                    return $path
+                }
+            }
+        }
+        elseif ($process.ExitCode -eq 3010) {
+            # 3010 = Success, reboot required (but we can continue)
+            Write-Log "ADK installed (reboot recommended later)" -Level "WARNING"
 
             foreach ($path in $adkPaths) {
                 if (Test-Path $path) {
@@ -474,13 +538,24 @@ function Get-Oscdimg {
         }
     }
 
+    # If we get here, installation failed
+    Write-Log "=" * 60 -Level "ERROR"
+    Write-Log "MANUAL INSTALLATION REQUIRED" -Level "ERROR"
+    Write-Log "=" * 60 -Level "ERROR"
+    Write-Log "Please install Windows ADK manually:" -Level "ERROR"
+    Write-Log "1. Download: https://go.microsoft.com/fwlink/?linkid=2271337" -Level "ERROR"
+    Write-Log "2. Run adksetup.exe" -Level "ERROR"
+    Write-Log "3. Select 'Deployment Tools' feature only" -Level "ERROR"
+    Write-Log "4. Re-run this script" -Level "ERROR"
+    Write-Log "=" * 60 -Level "ERROR"
+
     throw "Could not obtain oscdimg.exe - Windows ADK installation required"
 }
 
 function Get-HPDrivers {
     param(
         [string]$DownloadPath,
-        [string]$Edition = $null
+        [string]$Edition = $null  # Optional: filter by edition
     )
 
     $driverPath = Join-Path $DownloadPath "HPDrivers"
@@ -491,6 +566,7 @@ function Get-HPDrivers {
     $downloadedPaths = @()
 
     foreach ($driver in $HPDriverSources) {
+        # Filter by edition if specified
         if ($Edition -and $driver.Editions -and ($driver.Editions -notcontains $Edition)) {
             Write-Log "Skipping $($driver.Name) - not for $Edition edition"
             continue
@@ -499,6 +575,7 @@ function Get-HPDrivers {
         $softpaqFile = Join-Path $DownloadPath "$($driver.Folder).exe"
         $extractPath = Join-Path $driverPath $driver.Folder
 
+        # Skip if already extracted
         if (Test-Path $extractPath) {
             $existingInf = Get-ChildItem -Path $extractPath -Filter "*.inf" -Recurse -ErrorAction SilentlyContinue
             if ($existingInf.Count -gt 0) {
@@ -509,13 +586,29 @@ function Get-HPDrivers {
         }
 
         if (Download-File -Url $driver.URL -OutputPath $softpaqFile -Description $driver.Name) {
+            # Validate downloaded file is not empty/corrupt
+            $fileSize = (Get-Item $softpaqFile -ErrorAction SilentlyContinue).Length
+            if ($fileSize -lt 100000) {  # Less than 100KB is likely corrupt
+                Write-Log "  Downloaded file too small ($fileSize bytes) - skipping" -Level "WARNING"
+                Remove-Item -Path $softpaqFile -Force -ErrorAction SilentlyContinue
+                continue
+            }
+
             Write-Log "Extracting: $($driver.Name)"
 
             if (-not (Test-Path $extractPath)) {
                 New-Item -Path $extractPath -ItemType Directory -Force | Out-Null
             }
 
-            Start-Process -FilePath $softpaqFile -ArgumentList "-e", "-f`"$extractPath`"", "-s" -Wait -NoNewWindow
+            # HP Softpaqs are self-extracting
+            try {
+                Start-Process -FilePath $softpaqFile -ArgumentList "-e", "-f`"$extractPath`"", "-s" -Wait -NoNewWindow -ErrorAction Stop
+            }
+            catch {
+                Write-Log "  Extraction failed: $_" -Level "WARNING"
+                Remove-Item -Path $softpaqFile -Force -ErrorAction SilentlyContinue
+                continue
+            }
 
             $infFiles = Get-ChildItem -Path $extractPath -Filter "*.inf" -Recurse -ErrorAction SilentlyContinue
             if ($infFiles.Count -gt 0) {
@@ -579,6 +672,7 @@ function Set-OfflineRegistryTweaks {
         return
     }
 
+    # Load hives
     Write-Log "Loading registry hives..."
     reg load "HKLM\OFFLINE_SOFTWARE" $softwareHive 2>&1 | Out-Null
     reg load "HKLM\OFFLINE_DEFAULT" $defaultHive 2>&1 | Out-Null
@@ -606,6 +700,7 @@ function Set-OfflineRegistryTweaks {
         Write-Log "Registry tweaks applied" -Level "SUCCESS"
     }
     finally {
+        # Unload hives
         [gc]::Collect()
         Start-Sleep -Seconds 2
         reg unload "HKLM\OFFLINE_SOFTWARE" 2>&1 | Out-Null
@@ -625,6 +720,10 @@ function New-AutounattendXml {
     $xml = @"
 <?xml version="1.0" encoding="utf-8"?>
 <unattend xmlns="urn:schemas-microsoft-com:unattend" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+
+    <!-- ============================================================ -->
+    <!-- Windows PE Pass: Language, Edition Selection, Disk Config    -->
+    <!-- ============================================================ -->
     <settings pass="windowsPE">
         <component name="Microsoft-Windows-International-Core-WinPE" processorArchitecture="amd64"
                    publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
@@ -637,8 +736,11 @@ function New-AutounattendXml {
             <UILanguage>$($Locale.UILanguage)</UILanguage>
             <UserLocale>$($Locale.UserLocale)</UserLocale>
         </component>
+
         <component name="Microsoft-Windows-Setup" processorArchitecture="amd64"
                    publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+
+            <!-- Auto-select Windows Edition -->
             <ImageInstall>
                 <OSImage>
                     <InstallFrom>
@@ -653,21 +755,26 @@ function New-AutounattendXml {
                     </InstallTo>
                 </OSImage>
             </ImageInstall>
+
+            <!-- Auto-partition disk (UEFI/GPT) -->
             <DiskConfiguration>
                 <Disk wcm:action="add">
                     <DiskID>0</DiskID>
                     <WillWipeDisk>true</WillWipeDisk>
                     <CreatePartitions>
+                        <!-- EFI System Partition -->
                         <CreatePartition wcm:action="add">
                             <Order>1</Order>
                             <Size>300</Size>
                             <Type>EFI</Type>
                         </CreatePartition>
+                        <!-- MSR Partition -->
                         <CreatePartition wcm:action="add">
                             <Order>2</Order>
                             <Size>128</Size>
                             <Type>MSR</Type>
                         </CreatePartition>
+                        <!-- Windows Partition -->
                         <CreatePartition wcm:action="add">
                             <Order>3</Order>
                             <Extend>true</Extend>
@@ -694,6 +801,8 @@ function New-AutounattendXml {
                     </ModifyPartitions>
                 </Disk>
             </DiskConfiguration>
+
+            <!-- Accept EULA, set product key -->
             <UserData>
                 <ProductKey>
                     <Key>$ProductKey</Key>
@@ -703,11 +812,17 @@ function New-AutounattendXml {
             </UserData>
         </component>
     </settings>
+
+    <!-- ============================================================ -->
+    <!-- Specialize Pass: Computer settings                           -->
+    <!-- ============================================================ -->
     <settings pass="specialize">
         <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64"
                    publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
             <TimeZone>$($Locale.TimeZone)</TimeZone>
+            <!-- Let Autopilot handle computer name -->
         </component>
+
         <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64"
                    publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
             <InputLocale>$($Locale.InputLocale)</InputLocale>
@@ -715,6 +830,8 @@ function New-AutounattendXml {
             <UILanguage>$($Locale.UILanguage)</UILanguage>
             <UserLocale>$($Locale.UserLocale)</UserLocale>
         </component>
+
+        <!-- Disable Windows Copilot via registry -->
         <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64"
                    publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
             <RunSynchronous>
@@ -731,27 +848,32 @@ function New-AutounattendXml {
             </RunSynchronous>
         </component>
     </settings>
+
+    <!-- ============================================================ -->
+    <!-- OOBE Pass: Skip EVERYTHING - Go straight to Autopilot       -->
+    <!-- ============================================================ -->
     <settings pass="oobeSystem">
         <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64"
                    publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
             <OOBE>
-                <!-- Autopilot-compatible OOBE settings -->
+                <!-- Skip all the jargon -->
                 <HideEULAPage>true</HideEULAPage>
                 <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
-                <!-- DO NOT HIDE - Required for Autopilot Entra ID sign-in! -->
-                <HideOnlineAccountScreens>false</HideOnlineAccountScreens>
-                <!-- Hide local account - force Entra ID sign-in -->
+                <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
                 <HideLocalAccountScreen>true</HideLocalAccountScreen>
-                <!-- SHOW WiFi - Required for Autopilot enrollment! -->
                 <HideWirelessSetupInOOBE>false</HideWirelessSetupInOOBE>
-                <!-- Skip privacy settings (Intune policies will configure these) -->
                 <ProtectYourPC>3</ProtectYourPC>
-                <!-- DO NOT skip these - Autopilot needs Machine and User OOBE phases -->
-                <!-- <SkipMachineOOBE>true</SkipMachineOOBE> -->
-                <!-- <SkipUserOOBE>true</SkipUserOOBE> -->
+                <SkipMachineOOBE>true</SkipMachineOOBE>
+                <SkipUserOOBE>true</SkipUserOOBE>
                 <UnattendEnableRetailDemo>false</UnattendEnableRetailDemo>
+                <VMModeOptimizations>
+                    <SkipNotifyUILanguageChange>true</SkipNotifyUILanguageChange>
+                </VMModeOptimizations>
             </OOBE>
+
             <TimeZone>$($Locale.TimeZone)</TimeZone>
+
+            <!-- First logon: Additional cleanup -->
             <FirstLogonCommands>
                 <SynchronousCommand wcm:action="add">
                     <Order>1</Order>
@@ -761,6 +883,7 @@ function New-AutounattendXml {
                 </SynchronousCommand>
             </FirstLogonCommands>
         </component>
+
         <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64"
                    publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
             <InputLocale>$($Locale.InputLocale)</InputLocale>
@@ -769,6 +892,7 @@ function New-AutounattendXml {
             <UserLocale>$($Locale.UserLocale)</UserLocale>
         </component>
     </settings>
+
 </unattend>
 "@
 
@@ -796,6 +920,7 @@ function Build-CustomISO {
     $isoWorkDir = Join-Path $WorkingDir "ISO_$EditionName"
     $wimWorkFile = Join-Path $WorkingDir "install_$EditionName.wim"
 
+    # Create directories
     @($isoMountDir, $wimMountDir, $isoWorkDir) | ForEach-Object {
         if (-not (Test-Path $_)) {
             New-Item -Path $_ -ItemType Directory -Force | Out-Null
@@ -803,6 +928,7 @@ function Build-CustomISO {
     }
 
     try {
+        # Mount source ISO
         Write-Log "Mounting source ISO..."
         $mountResult = Mount-DiskImage -ImagePath $SourceISO -PassThru
         Start-Sleep -Seconds 3
@@ -810,26 +936,35 @@ function Build-CustomISO {
         $sourcePath = "${driveLetter}:\"
         Write-Log "  Mounted as drive $driveLetter`:"
 
+        # Copy ISO contents
         Write-Log "Copying ISO contents..."
         robocopy "$sourcePath" "$isoWorkDir" /E /NFL /NDL /NJH /NJS /NC /NS /NP | Out-Null
         Write-Log "  ISO contents copied" -Level "SUCCESS"
 
+        # Unmount source ISO
         Dismount-DiskImage -ImagePath $SourceISO | Out-Null
 
+        # Find install.wim or install.esd
         $installWim = Join-Path $isoWorkDir "sources\install.wim"
         $installEsd = Join-Path $isoWorkDir "sources\install.esd"
 
         if (Test-Path $installEsd) {
             Write-Log "Converting install.esd to install.wim..."
+
+            # Export only the edition we need
             Export-WindowsImage -SourceImagePath $installEsd -SourceIndex $EditionConfig.ImageIndex `
                 -DestinationImagePath $wimWorkFile -CompressionType Maximum | Out-Null
+
             Remove-Item $installEsd -Force
             Write-Log "  Converted to WIM" -Level "SUCCESS"
         }
         elseif (Test-Path $installWim) {
             Write-Log "Extracting edition from install.wim..."
+
+            # Export only the edition we need (creates smaller WIM with index 1)
             Export-WindowsImage -SourceImagePath $installWim -SourceIndex $EditionConfig.ImageIndex `
                 -DestinationImagePath $wimWorkFile -CompressionType Maximum | Out-Null
+
             Remove-Item $installWim -Force
             Write-Log "  Edition extracted" -Level "SUCCESS"
         }
@@ -837,21 +972,26 @@ function Build-CustomISO {
             throw "No install.wim or install.esd found"
         }
 
+        # Mount the WIM (now index 1 since we exported single edition)
         Write-Log "Mounting WIM for modification..."
         Mount-WindowsImage -ImagePath $wimWorkFile -Index 1 -Path $wimMountDir | Out-Null
         Write-Log "  WIM mounted" -Level "SUCCESS"
 
+        # Remove bloatware
         if (-not $SkipDebloat) {
             Write-Log ""
             Write-Log "--- Removing bloatware ---"
+
             $allAppsToRemove = $MicrosoftAppsToRemove + $ThirdPartyAppsToRemove + $HPAppsToRemove + $DellAppsToRemove + $LenovoAppsToRemove
             Remove-AppxFromImage -MountPath $wimMountDir -AppList $allAppsToRemove
         }
 
+        # Apply registry tweaks
         Write-Log ""
         Write-Log "--- Applying registry tweaks ---"
         Set-OfflineRegistryTweaks -MountPath $wimMountDir -Tweaks $RegistryTweaks
 
+        # Inject drivers
         if (-not $SkipDrivers -and $DriverPaths.Count -gt 0) {
             Write-Log ""
             Write-Log "--- Injecting HP WiFi drivers ---"
@@ -873,13 +1013,16 @@ function Build-CustomISO {
             }
         }
 
+        # Unmount and save - with DISM fallback for reliability
         Write-Log ""
-        Write-Log "Saving changes to WIM..."
+        Write-Log "Saving changes to WIM (this may take several minutes)..."
 
+        # Force garbage collection to release file handles
         [gc]::Collect()
         [gc]::WaitForPendingFinalizers()
         Start-Sleep -Seconds 5
 
+        # Try PowerShell cmdlet first, fall back to DISM
         $dismountSuccess = $false
         try {
             Write-Log "  Attempting PowerShell dismount..."
@@ -888,22 +1031,30 @@ function Build-CustomISO {
         }
         catch {
             Write-Log "  PowerShell dismount failed, trying DISM..." -Level "WARNING"
+
+            # Use DISM directly with explicit path
             $dismResult = & dism.exe /Unmount-Wim /MountDir:"$wimMountDir" /Commit 2>&1
             if ($LASTEXITCODE -eq 0) {
                 $dismountSuccess = $true
             }
+            else {
+                Write-Log "  DISM output: $dismResult" -Level "ERROR"
+            }
         }
 
         if (-not $dismountSuccess) {
+            # Last resort: try discard and throw error
             Write-Log "  Attempting discard to recover..." -Level "WARNING"
             & dism.exe /Unmount-Wim /MountDir:"$wimMountDir" /Discard 2>&1 | Out-Null
-            throw "Failed to save WIM changes"
+            throw "Failed to save WIM changes. The mount was discarded."
         }
 
         Write-Log "  WIM saved" -Level "SUCCESS"
 
+        # Move WIM to ISO sources
         Move-Item -Path $wimWorkFile -Destination (Join-Path $isoWorkDir "sources\install.wim") -Force
 
+        # Create autounattend.xml
         Write-Log ""
         Write-Log "--- Creating autounattend.xml ---"
         $autounattendPath = Join-Path $isoWorkDir "autounattend.xml"
@@ -913,6 +1064,7 @@ function Build-CustomISO {
             -ProductKey $EditionConfig.ProductKey `
             -Locale $LocaleSettings
 
+        # Create ISO with oscdimg
         Write-Log ""
         Write-Log "--- Creating final ISO ---"
 
@@ -943,10 +1095,14 @@ function Build-CustomISO {
         return $outputISO
     }
     finally {
+        # Cleanup
         Write-Log "Cleaning up..."
+
+        # Try to dismount if still mounted
         try { Dismount-WindowsImage -Path $wimMountDir -Discard -ErrorAction SilentlyContinue } catch {}
         try { Dismount-DiskImage -ImagePath $SourceISO -ErrorAction SilentlyContinue } catch {}
 
+        # Remove working directories
         @($isoMountDir, $wimMountDir, $isoWorkDir) | ForEach-Object {
             if (Test-Path $_) {
                 Remove-Item -Path $_ -Recurse -Force -ErrorAction SilentlyContinue
@@ -967,28 +1123,33 @@ function Build-CustomISO {
 $ErrorActionPreference = "Stop"
 $startTime = Get-Date
 
+# Banner
 Clear-Host
 Write-Host @"
 ========================================
-  Windows 11 ISO Builder
-  Debloat + WiFi Drivers + Autopilot
+  Modum Kommune ISO Builder
+  Windows 11 Debloat + Customize
 ========================================
 "@ -ForegroundColor Cyan
 
+# Check admin
 if (-not (Test-AdminPrivileges)) {
     Write-Host "ERROR: Run this script as Administrator" -ForegroundColor Red
     exit 1
 }
 
+# Validate source ISO
 if (-not (Test-Path $SourceISO)) {
     Write-Host "ERROR: Source ISO not found: $SourceISO" -ForegroundColor Red
     exit 1
 }
 
+# Create output folder
 if (-not (Test-Path $OutputFolder)) {
     New-Item -Path $OutputFolder -ItemType Directory -Force | Out-Null
 }
 
+# Working directory
 $workingDir = "C:\ISO-Build-Work"
 $driversDir = "C:\ISO-Build-Drivers"
 
@@ -999,17 +1160,19 @@ $driversDir = "C:\ISO-Build-Drivers"
 }
 
 Write-Log "=========================================="
-Write-Log "ISO Builder - Started"
+Write-Log "Modum Kommune ISO Builder - Started"
 Write-Log "=========================================="
 Write-Log "Source ISO: $SourceISO"
 Write-Log "Output Folder: $OutputFolder"
 Write-Log "Edition(s): $Edition"
 
 try {
+    # Get oscdimg
     Write-Log ""
     Write-Log "--- Preparing tools ---"
     $oscdimgPath = Get-Oscdimg -DownloadPath $workingDir
 
+    # Build ISOs
     $createdISOs = @()
 
     $editionsToBuild = if ($Edition -eq "Both") { @("Education", "Enterprise") } else { @($Edition) }
@@ -1017,6 +1180,7 @@ try {
     foreach ($editionName in $editionsToBuild) {
         Write-Log ""
 
+        # Download HP drivers for this specific edition
         $driverPaths = @()
         if (-not $SkipDrivers) {
             Write-Log "--- Downloading HP WiFi drivers for $editionName ---"
@@ -1036,6 +1200,7 @@ try {
         $createdISOs += $isoPath
     }
 
+    # Summary
     $duration = (Get-Date) - $startTime
 
     Write-Log ""
@@ -1051,7 +1216,7 @@ try {
     }
     Write-Log ""
     Write-Log "Next steps:"
-    Write-Log "  1. Use Rufus to create bootable USB"
+    Write-Log "  1. Use Rufus or similar to create bootable USB"
     Write-Log "  2. Boot device from USB"
     Write-Log "  3. Windows installs automatically"
     Write-Log "  4. Connect to WiFi (drivers pre-installed)"
@@ -1064,12 +1229,14 @@ catch {
     exit 1
 }
 finally {
+    # Cleanup: Unmount any stuck mounts before deleting
     Write-Log ""
     Write-Log "--- Cleanup ---"
 
+    # Dismount any mounted WIMs in work directory
     $wimMountPath = Join-Path $workingDir "WIM_Mount"
     if (Test-Path $wimMountPath) {
-        Write-Log "Unmounting WIM..."
+        Write-Log "Unmounting WIM (if mounted)..."
         try {
             Dismount-WindowsImage -Path $wimMountPath -Discard -ErrorAction SilentlyContinue | Out-Null
         }
@@ -1078,21 +1245,25 @@ finally {
         }
     }
 
+    # Dismount source ISO
     if ($SourceISO -and (Test-Path $SourceISO)) {
-        Write-Log "Unmounting source ISO..."
+        Write-Log "Unmounting source ISO (if mounted)..."
         try {
             Dismount-DiskImage -ImagePath $SourceISO -ErrorAction SilentlyContinue | Out-Null
         }
         catch {}
     }
 
+    # Run DISM cleanup for any orphaned mounts
     Write-Log "Running DISM cleanup..."
     & dism.exe /Cleanup-Wim 2>&1 | Out-Null
 
+    # Force garbage collection to release handles
     [gc]::Collect()
     [gc]::WaitForPendingFinalizers()
     Start-Sleep -Seconds 2
 
+    # Delete working directory
     if (Test-Path $workingDir) {
         Write-Log "Deleting working directory..."
         try {

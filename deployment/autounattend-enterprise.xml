@@ -1,64 +1,80 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-============================================================================
-Eriteach Scripts
-Author: Robel (https://github.com/Thugney)
-Repository: https://github.com/Thugney/eriteach-scripts
-License: MIT
+    Windows 11 Enterprise - Streamlined OOBE for Autopilot
 
-Autopilot-compatible autounattend.xml for Windows 11 Enterprise
-- Skips non-essential OOBE screens (EULA, OEM registration, privacy)
-- Preserves Autopilot enrollment flow (online account, machine/user OOBE)
-- Norwegian locale settings (nb-NO)
-============================================================================
+    This autounattend skips ALL unnecessary OOBE screens:
+    - No region/country selection (pre-configured Norwegian)
+    - No keyboard layout selection
+    - No EULA click
+    - No privacy questions
+    - No Cortana/voice setup
+    - No device naming
+    - WiFi screen shown (required for Autopilot)
+    - Goes directly to organization login
+
+    For use with Intune/Entra ID Autopilot deployments.
 -->
-<unattend xmlns="urn:schemas-microsoft-com:unattend">
+<unattend xmlns="urn:schemas-microsoft-com:unattend" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+
+    <!-- ============================================================ -->
+    <!-- WINDOWS PE PASS                                              -->
+    <!-- Runs during Windows Setup (before Windows is installed)      -->
+    <!-- ============================================================ -->
     <settings pass="windowsPE">
+
+        <!-- Language and locale configuration -->
         <component name="Microsoft-Windows-International-Core-WinPE" processorArchitecture="amd64"
-                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
-                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
             <SetupUILanguage>
                 <UILanguage>nb-NO</UILanguage>
+                <WillShowUI>OnError</WillShowUI>
             </SetupUILanguage>
             <InputLocale>0414:00000414</InputLocale>
             <SystemLocale>nb-NO</SystemLocale>
             <UILanguage>nb-NO</UILanguage>
             <UserLocale>nb-NO</UserLocale>
         </component>
+
+        <!-- Windows Setup configuration -->
         <component name="Microsoft-Windows-Setup" processorArchitecture="amd64"
-                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
-                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
+
+            <!-- Auto-select Windows 11 Enterprise (Index 1 after export, originally 11) -->
             <ImageInstall>
                 <OSImage>
                     <InstallFrom>
                         <MetaData wcm:action="add">
-                            <Key>/IMAGE/NAME</Key>
-                            <Value>Windows 11 Enterprise</Value>
+                            <Key>/IMAGE/INDEX</Key>
+                            <Value>1</Value>
                         </MetaData>
                     </InstallFrom>
+                    <!-- Install to partition 3 (after EFI and MSR) -->
                     <InstallTo>
                         <DiskID>0</DiskID>
                         <PartitionID>3</PartitionID>
                     </InstallTo>
                 </OSImage>
             </ImageInstall>
+
+            <!-- Automatic disk partitioning (UEFI/GPT layout) -->
             <DiskConfiguration>
                 <Disk wcm:action="add">
                     <DiskID>0</DiskID>
                     <WillWipeDisk>true</WillWipeDisk>
                     <CreatePartitions>
+                        <!-- EFI System Partition (ESP) - Required for UEFI boot -->
                         <CreatePartition wcm:action="add">
                             <Order>1</Order>
-                            <Size>100</Size>
+                            <Size>300</Size>
                             <Type>EFI</Type>
                         </CreatePartition>
+                        <!-- Microsoft Reserved Partition (MSR) -->
                         <CreatePartition wcm:action="add">
                             <Order>2</Order>
-                            <Size>16</Size>
+                            <Size>128</Size>
                             <Type>MSR</Type>
                         </CreatePartition>
+                        <!-- Windows Partition - Uses remaining space -->
                         <CreatePartition wcm:action="add">
                             <Order>3</Order>
                             <Extend>true</Extend>
@@ -85,106 +101,164 @@ Autopilot-compatible autounattend.xml for Windows 11 Enterprise
                     </ModifyPartitions>
                 </Disk>
             </DiskConfiguration>
+
+            <!-- Product key and EULA -->
             <UserData>
                 <ProductKey>
-                    <!-- Windows 11 Enterprise Generic Key -->
                     <Key>NPPR9-FWDCX-D2C8J-H872K-2YT43</Key>
                     <WillShowUI>OnError</WillShowUI>
                 </ProductKey>
                 <AcceptEula>true</AcceptEula>
             </UserData>
+
+            <!-- Bypass TPM/SecureBoot checks (optional - uncomment if needed) -->
+            <!--
+            <RunSynchronous>
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>1</Order>
+                    <Path>reg add HKLM\SYSTEM\Setup\LabConfig /v BypassTPMCheck /t REG_DWORD /d 1 /f</Path>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>2</Order>
+                    <Path>reg add HKLM\SYSTEM\Setup\LabConfig /v BypassSecureBootCheck /t REG_DWORD /d 1 /f</Path>
+                </RunSynchronousCommand>
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>3</Order>
+                    <Path>reg add HKLM\SYSTEM\Setup\LabConfig /v BypassRAMCheck /t REG_DWORD /d 1 /f</Path>
+                </RunSynchronousCommand>
+            </RunSynchronous>
+            -->
         </component>
     </settings>
+
+    <!-- ============================================================ -->
+    <!-- SPECIALIZE PASS                                              -->
+    <!-- Runs after Windows is installed, before first boot           -->
+    <!-- ============================================================ -->
     <settings pass="specialize">
+
+        <!-- Shell and system settings -->
         <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64"
-                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
-                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
             <TimeZone>W. Europe Standard Time</TimeZone>
+            <!-- Computer name - leave blank for Autopilot to set -->
+            <!-- <ComputerName>*</ComputerName> -->
         </component>
+
+        <!-- Language settings -->
         <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64"
-                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
-                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
             <InputLocale>0414:00000414</InputLocale>
             <SystemLocale>nb-NO</SystemLocale>
             <UILanguage>nb-NO</UILanguage>
             <UserLocale>nb-NO</UserLocale>
         </component>
+
+        <!-- Pre-OOBE registry tweaks -->
         <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64"
-                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
-                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
             <RunSynchronous>
+                <!-- Disable Windows Copilot (Consumer) -->
                 <RunSynchronousCommand wcm:action="add">
                     <Order>1</Order>
                     <Path>reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot" /v TurnOffWindowsCopilot /t REG_DWORD /d 1 /f</Path>
                     <Description>Disable Windows Copilot</Description>
                 </RunSynchronousCommand>
+                <!-- Disable Widgets/News -->
                 <RunSynchronousCommand wcm:action="add">
                     <Order>2</Order>
                     <Path>reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v AllowNewsAndInterests /t REG_DWORD /d 0 /f</Path>
                     <Description>Disable Widgets</Description>
                 </RunSynchronousCommand>
+                <!-- Disable Bing Search in Start Menu -->
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>3</Order>
+                    <Path>reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v DisableWebSearch /t REG_DWORD /d 1 /f</Path>
+                    <Description>Disable Bing Search</Description>
+                </RunSynchronousCommand>
+                <!-- Disable Consumer Features -->
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>4</Order>
+                    <Path>reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent" /v DisableWindowsConsumerFeatures /t REG_DWORD /d 1 /f</Path>
+                    <Description>Disable Consumer Features</Description>
+                </RunSynchronousCommand>
+                <!-- Disable Telemetry -->
+                <RunSynchronousCommand wcm:action="add">
+                    <Order>5</Order>
+                    <Path>reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection" /v AllowTelemetry /t REG_DWORD /d 0 /f</Path>
+                    <Description>Disable Telemetry</Description>
+                </RunSynchronousCommand>
             </RunSynchronous>
         </component>
     </settings>
+
+    <!-- ============================================================ -->
+    <!-- OOBE SYSTEM PASS                                             -->
+    <!-- Runs during Out-of-Box Experience (first boot)               -->
+    <!-- THIS IS WHERE WE SKIP ALL THE JARGON                         -->
+    <!-- ============================================================ -->
     <settings pass="oobeSystem">
+
         <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64"
-                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
-                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
             <OOBE>
                 <!-- === AUTOPILOT-COMPATIBLE OOBE SETTINGS === -->
-                <!-- Only skip non-essential screens, let Autopilot handle enrollment -->
+                <!-- Only skip pre-network screens, preserve enrollment flow -->
 
                 <!-- Skip license agreement -->
                 <HideEULAPage>true</HideEULAPage>
+
                 <!-- Skip OEM registration -->
                 <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
 
-                <!-- DO NOT HIDE - Required for Autopilot Entra ID sign-in! -->
+                <!-- SHOW online account screens - Required for Autopilot Entra ID sign-in! -->
                 <HideOnlineAccountScreens>false</HideOnlineAccountScreens>
 
-                <!-- Hide local account - force Entra ID sign-in -->
-                <HideLocalAccountScreen>true</HideLocalAccountScreen>
+                <!-- SHOW local account screen - Let Autopilot handle this -->
+                <HideLocalAccountScreen>false</HideLocalAccountScreen>
 
                 <!-- SHOW WiFi - Required for Autopilot enrollment! -->
                 <HideWirelessSetupInOOBE>false</HideWirelessSetupInOOBE>
 
-                <!-- Skip privacy settings (Intune policies will configure these) -->
-                <ProtectYourPC>3</ProtectYourPC>
-
-                <!-- DO NOT SKIP Machine OOBE - Autopilot needs this phase! -->
-                <!-- <SkipMachineOOBE>true</SkipMachineOOBE> -->
-
-                <!-- DO NOT SKIP User OOBE - Autopilot enrollment happens here! -->
-                <!-- <SkipUserOOBE>true</SkipUserOOBE> -->
+                <!-- Let Autopilot/Intune handle privacy settings -->
+                <ProtectYourPC>1</ProtectYourPC>
 
                 <!-- Disable retail demo mode -->
                 <UnattendEnableRetailDemo>false</UnattendEnableRetailDemo>
 
-                <!-- Skip network location wizard -->
-                <NetworkLocation>Work</NetworkLocation>
+                <!-- DO NOT set NetworkLocation - let Autopilot detect -->
             </OOBE>
+
+            <!-- Timezone (already set but reinforced here) -->
             <TimeZone>W. Europe Standard Time</TimeZone>
+
+            <!-- First logon cleanup commands -->
             <FirstLogonCommands>
+                <!-- Remove Copilot if Windows reinstalled it -->
                 <SynchronousCommand wcm:action="add">
                     <Order>1</Order>
                     <CommandLine>powershell -NoProfile -Command "Get-AppxPackage -AllUsers *Microsoft.Copilot* | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue"</CommandLine>
-                    <Description>Remove Copilot if reinstalled</Description>
+                    <Description>Remove Copilot</Description>
+                    <RequiresUserInput>false</RequiresUserInput>
+                </SynchronousCommand>
+                <!-- Remove Xbox Game Bar -->
+                <SynchronousCommand wcm:action="add">
+                    <Order>2</Order>
+                    <CommandLine>powershell -NoProfile -Command "Get-AppxPackage -AllUsers *Xbox* | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue"</CommandLine>
+                    <Description>Remove Xbox</Description>
                     <RequiresUserInput>false</RequiresUserInput>
                 </SynchronousCommand>
             </FirstLogonCommands>
         </component>
+
+        <!-- Language settings (final) -->
         <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64"
-                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS"
-                   xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                   publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
             <InputLocale>0414:00000414</InputLocale>
             <SystemLocale>nb-NO</SystemLocale>
             <UILanguage>nb-NO</UILanguage>
             <UserLocale>nb-NO</UserLocale>
         </component>
     </settings>
+
 </unattend>
