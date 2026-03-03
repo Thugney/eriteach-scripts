@@ -8,7 +8,7 @@
     - Injects HP WiFi drivers for Autopilot enrollment
     - Applies registry tweaks (telemetry, ads, consumer features)
     - Includes autounattend.xml for OOBE skip
-    - Produces separate ISOs for Education and Enterprise editions
+    - Produces a single-edition ISO or one combined multi-edition ISO
 
 .PARAMETER SourceISO
     Path to the source Windows 11 ISO file.
@@ -77,6 +77,8 @@ $EditionsConfig = @{
         OutputName       = "Windows11-Enterprise-Custom.iso"
     }
 }
+
+$MultiEditionOutputName = "Windows11-Education-Enterprise-Custom.iso"
 
 # ------------------------------------------------------------------------------
 # APPS TO REMOVE - Comment out any app you want to KEEP
@@ -712,10 +714,40 @@ function New-AutounattendXml {
     param(
         [string]$OutputPath,
         [string]$EditionName,
-        [int]$ImageIndex,
-        [string]$ProductKey,
+        [int]$ImageIndex = 1,
+        [string]$ProductKey = "",
         [hashtable]$Locale
     )
+
+    $installFromSection = if ($ImageIndex -gt 0) {
+@"
+                    <InstallFrom>
+                        <MetaData wcm:action="add">
+                            <Key>/IMAGE/INDEX</Key>
+                            <Value>$ImageIndex</Value>
+                        </MetaData>
+                    </InstallFrom>
+"@
+    }
+    else {
+@"
+                    <!-- InstallFrom intentionally omitted to allow edition selection -->
+"@
+    }
+
+    $productKeySection = if ($ProductKey -and $ProductKey.Trim()) {
+@"
+                <ProductKey>
+                    <Key>$ProductKey</Key>
+                    <WillShowUI>OnError</WillShowUI>
+                </ProductKey>
+"@
+    }
+    else {
+@"
+                <!-- Product key intentionally omitted -->
+"@
+    }
 
     $xml = @"
 <?xml version="1.0" encoding="utf-8"?>
@@ -743,12 +775,7 @@ function New-AutounattendXml {
             <!-- Auto-select Windows Edition -->
             <ImageInstall>
                 <OSImage>
-                    <InstallFrom>
-                        <MetaData wcm:action="add">
-                            <Key>/IMAGE/INDEX</Key>
-                            <Value>$ImageIndex</Value>
-                        </MetaData>
-                    </InstallFrom>
+$installFromSection
                     <InstallTo>
                         <DiskID>0</DiskID>
                         <PartitionID>3</PartitionID>
@@ -802,12 +829,9 @@ function New-AutounattendXml {
                 </Disk>
             </DiskConfiguration>
 
-            <!-- Accept EULA, set product key -->
+            <!-- Accept EULA, optional product key -->
             <UserData>
-                <ProductKey>
-                    <Key>$ProductKey</Key>
-                    <WillShowUI>OnError</WillShowUI>
-                </ProductKey>
+$productKeySection
                 <AcceptEula>true</AcceptEula>
             </UserData>
         </component>
@@ -850,21 +874,19 @@ function New-AutounattendXml {
     </settings>
 
     <!-- ============================================================ -->
-    <!-- OOBE Pass: Skip EVERYTHING - Go straight to Autopilot       -->
+    <!-- OOBE Pass: Skip pre-enrollment screens, preserve Autopilot  -->
     <!-- ============================================================ -->
     <settings pass="oobeSystem">
         <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64"
                    publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS">
             <OOBE>
-                <!-- Skip all the jargon -->
+                <!-- Keep WiFi + account/enrollment flow visible -->
                 <HideEULAPage>true</HideEULAPage>
                 <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
-                <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
-                <HideLocalAccountScreen>true</HideLocalAccountScreen>
+                <HideOnlineAccountScreens>false</HideOnlineAccountScreens>
+                <HideLocalAccountScreen>false</HideLocalAccountScreen>
                 <HideWirelessSetupInOOBE>false</HideWirelessSetupInOOBE>
                 <ProtectYourPC>3</ProtectYourPC>
-                <SkipMachineOOBE>true</SkipMachineOOBE>
-                <SkipUserOOBE>true</SkipUserOOBE>
                 <UnattendEnableRetailDemo>false</UnattendEnableRetailDemo>
                 <VMModeOptimizations>
                     <SkipNotifyUILanguageChange>true</SkipNotifyUILanguageChange>
@@ -903,13 +925,37 @@ function New-AutounattendXml {
 function Build-CustomISO {
     param(
         [string]$EditionName,
-        [hashtable]$EditionConfig,
+        [hashtable]$EditionConfig = $null,
         [string]$SourceISO,
         [string]$WorkingDir,
         [string]$OutputFolder,
-        [string[]]$DriverPaths,
-        [string]$OscdimgPath
+        [string[]]$DriverPaths = @(),
+        [string]$OscdimgPath,
+        [int[]]$SourceImageIndexes = @(),
+        [int]$UnattendImageIndex = 1,
+        [string]$OutputISOName = ""
     )
+
+    if (-not $SourceImageIndexes -or $SourceImageIndexes.Count -eq 0) {
+        if (-not $EditionConfig -or -not $EditionConfig.ContainsKey("ImageIndex")) {
+            throw "No source image index specified for $EditionName"
+        }
+        $SourceImageIndexes = @([int]$EditionConfig.ImageIndex)
+    }
+
+    if ([string]::IsNullOrWhiteSpace($OutputISOName)) {
+        if (-not $EditionConfig -or -not $EditionConfig.ContainsKey("OutputName")) {
+            throw "No output ISO name specified for $EditionName"
+        }
+        $OutputISOName = [string]$EditionConfig.OutputName
+    }
+
+    if ($UnattendImageIndex -lt 0) {
+        throw "Unattend image index must be 0 or higher"
+    }
+    if ($UnattendImageIndex -gt 0 -and $UnattendImageIndex -gt $SourceImageIndexes.Count) {
+        throw "Unattend image index $UnattendImageIndex exceeds available image count $($SourceImageIndexes.Count)"
+    }
 
     Write-Log "=========================================="
     Write-Log "Building ISO: $EditionName"
@@ -919,6 +965,16 @@ function Build-CustomISO {
     $wimMountDir = Join-Path $WorkingDir "WIM_Mount"
     $isoWorkDir = Join-Path $WorkingDir "ISO_$EditionName"
     $wimWorkFile = Join-Path $WorkingDir "install_$EditionName.wim"
+
+    # Clean per-edition working artifacts to avoid stale edition carry-over
+    if (Test-Path $isoWorkDir) {
+        Write-Log "Cleaning previous work directory for $EditionName..."
+        Remove-Item -Path $isoWorkDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    if (Test-Path $wimWorkFile) {
+        Write-Log "Removing stale working WIM for $EditionName..."
+        Remove-Item -Path $wimWorkFile -Force -ErrorAction SilentlyContinue
+    }
 
     # Create directories
     @($isoMountDir, $wimMountDir, $isoWorkDir) | ForEach-Object {
@@ -947,112 +1003,134 @@ function Build-CustomISO {
         # Find install.wim or install.esd
         $installWim = Join-Path $isoWorkDir "sources\install.wim"
         $installEsd = Join-Path $isoWorkDir "sources\install.esd"
+        $sourceInstallImage = $null
 
         if (Test-Path $installEsd) {
-            Write-Log "Converting install.esd to install.wim..."
-
-            # Export only the edition we need
-            Export-WindowsImage -SourceImagePath $installEsd -SourceIndex $EditionConfig.ImageIndex `
-                -DestinationImagePath $wimWorkFile -CompressionType Maximum | Out-Null
-
-            Remove-Item $installEsd -Force
-            Write-Log "  Converted to WIM" -Level "SUCCESS"
+            $sourceInstallImage = $installEsd
+            Write-Log "Using source image: install.esd"
         }
         elseif (Test-Path $installWim) {
-            Write-Log "Extracting edition from install.wim..."
-
-            # Export only the edition we need (creates smaller WIM with index 1)
-            Export-WindowsImage -SourceImagePath $installWim -SourceIndex $EditionConfig.ImageIndex `
-                -DestinationImagePath $wimWorkFile -CompressionType Maximum | Out-Null
-
-            Remove-Item $installWim -Force
-            Write-Log "  Edition extracted" -Level "SUCCESS"
+            $sourceInstallImage = $installWim
+            Write-Log "Using source image: install.wim"
         }
         else {
             throw "No install.wim or install.esd found"
         }
 
-        # Mount the WIM (now index 1 since we exported single edition)
-        Write-Log "Mounting WIM for modification..."
-        Mount-WindowsImage -ImagePath $wimWorkFile -Index 1 -Path $wimMountDir | Out-Null
-        Write-Log "  WIM mounted" -Level "SUCCESS"
+        Write-Log "Exporting source image index(es): $($SourceImageIndexes -join ', ')"
 
-        # Remove bloatware
-        if (-not $SkipDebloat) {
-            Write-Log ""
-            Write-Log "--- Removing bloatware ---"
+        $firstExport = $true
+        foreach ($sourceIndex in $SourceImageIndexes) {
+            Write-Log "  Exporting source index $sourceIndex..."
 
-            $allAppsToRemove = $MicrosoftAppsToRemove + $ThirdPartyAppsToRemove + $HPAppsToRemove + $DellAppsToRemove + $LenovoAppsToRemove
-            Remove-AppxFromImage -MountPath $wimMountDir -AppList $allAppsToRemove
-        }
-
-        # Apply registry tweaks
-        Write-Log ""
-        Write-Log "--- Applying registry tweaks ---"
-        Set-OfflineRegistryTweaks -MountPath $wimMountDir -Tweaks $RegistryTweaks
-
-        # Inject drivers
-        if (-not $SkipDrivers -and $DriverPaths.Count -gt 0) {
-            Write-Log ""
-            Write-Log "--- Injecting HP WiFi drivers ---"
-
-            foreach ($driverFolder in $DriverPaths) {
-                if (Test-Path $driverFolder) {
-                    Write-Log "  Adding: $(Split-Path $driverFolder -Leaf)"
-                    try {
-                        $result = Add-WindowsDriver -Path $wimMountDir -Driver $driverFolder -Recurse -ForceUnsigned -ErrorAction SilentlyContinue
-                        $addedCount = ($result | Measure-Object).Count
-                        if ($addedCount -gt 0) {
-                            Write-Log "    Added $addedCount drivers" -Level "SUCCESS"
-                        }
-                    }
-                    catch {
-                        Write-Log "    Warning: $_" -Level "WARNING"
-                    }
+            if ($firstExport) {
+                Export-WindowsImage -SourceImagePath $sourceInstallImage -SourceIndex $sourceIndex `
+                    -DestinationImagePath $wimWorkFile -CompressionType Maximum | Out-Null
+                $firstExport = $false
+            }
+            else {
+                # Older DISM modules do not support -Append on Export-WindowsImage.
+                # Use dism.exe directly, which appends when destination WIM already exists.
+                $dismExportResult = & dism.exe /Export-Image /SourceImageFile:"$sourceInstallImage" `
+                    /SourceIndex:$sourceIndex /DestinationImageFile:"$wimWorkFile" /Compress:max 2>&1
+                if ($LASTEXITCODE -ne 0) {
+                    throw "DISM export failed for source index $sourceIndex. Output: $dismExportResult"
                 }
             }
         }
 
-        # Unmount and save - with DISM fallback for reliability
-        Write-Log ""
-        Write-Log "Saving changes to WIM (this may take several minutes)..."
+        Remove-Item $sourceInstallImage -Force
+        Write-Log "  Exported $($SourceImageIndexes.Count) image(s) to working WIM" -Level "SUCCESS"
 
-        # Force garbage collection to release file handles
-        [gc]::Collect()
-        [gc]::WaitForPendingFinalizers()
-        Start-Sleep -Seconds 5
+        $allAppsToRemove = $MicrosoftAppsToRemove + $ThirdPartyAppsToRemove + $HPAppsToRemove + $DellAppsToRemove + $LenovoAppsToRemove
 
-        # Try PowerShell cmdlet first, fall back to DISM
-        $dismountSuccess = $false
-        try {
-            Write-Log "  Attempting PowerShell dismount..."
-            Dismount-WindowsImage -Path $wimMountDir -Save -ErrorAction Stop | Out-Null
-            $dismountSuccess = $true
-        }
-        catch {
-            Write-Log "  PowerShell dismount failed, trying DISM..." -Level "WARNING"
+        for ($targetIndex = 1; $targetIndex -le $SourceImageIndexes.Count; $targetIndex++) {
+            Write-Log ""
+            Write-Log "--- Customizing image index $targetIndex of $($SourceImageIndexes.Count) ---"
 
-            # Use DISM directly with explicit path
-            $dismResult = & dism.exe /Unmount-Wim /MountDir:"$wimMountDir" /Commit 2>&1
-            if ($LASTEXITCODE -eq 0) {
+            # Mount each image index and apply same customizations
+            Mount-WindowsImage -ImagePath $wimWorkFile -Index $targetIndex -Path $wimMountDir | Out-Null
+            Write-Log "  WIM index $targetIndex mounted" -Level "SUCCESS"
+
+            # Remove bloatware
+            if (-not $SkipDebloat) {
+                Write-Log ""
+                Write-Log "--- Removing bloatware ---"
+                Remove-AppxFromImage -MountPath $wimMountDir -AppList $allAppsToRemove
+            }
+
+            # Apply registry tweaks
+            Write-Log ""
+            Write-Log "--- Applying registry tweaks ---"
+            Set-OfflineRegistryTweaks -MountPath $wimMountDir -Tweaks $RegistryTweaks
+
+            # Inject drivers
+            if (-not $SkipDrivers -and $DriverPaths -and $DriverPaths.Count -gt 0) {
+                Write-Log ""
+                Write-Log "--- Injecting HP WiFi drivers ---"
+
+                foreach ($driverFolder in $DriverPaths) {
+                    if (Test-Path $driverFolder) {
+                        Write-Log "  Adding: $(Split-Path $driverFolder -Leaf)"
+                        try {
+                            $result = Add-WindowsDriver -Path $wimMountDir -Driver $driverFolder -Recurse -ForceUnsigned -ErrorAction SilentlyContinue
+                            $addedCount = ($result | Measure-Object).Count
+                            if ($addedCount -gt 0) {
+                                Write-Log "    Added $addedCount drivers" -Level "SUCCESS"
+                            }
+                        }
+                        catch {
+                            Write-Log "    Warning: $_" -Level "WARNING"
+                        }
+                    }
+                }
+            }
+
+            # Unmount and save - with DISM fallback for reliability
+            Write-Log ""
+            Write-Log "Saving changes for image index $targetIndex (this may take several minutes)..."
+
+            # Force garbage collection to release file handles
+            [gc]::Collect()
+            [gc]::WaitForPendingFinalizers()
+            Start-Sleep -Seconds 5
+
+            # Try PowerShell cmdlet first, fall back to DISM
+            $dismountSuccess = $false
+            try {
+                Write-Log "  Attempting PowerShell dismount..."
+                Dismount-WindowsImage -Path $wimMountDir -Save -ErrorAction Stop | Out-Null
                 $dismountSuccess = $true
             }
-            else {
-                Write-Log "  DISM output: $dismResult" -Level "ERROR"
+            catch {
+                Write-Log "  PowerShell dismount failed, trying DISM..." -Level "WARNING"
+
+                # Use DISM directly with explicit path
+                $dismResult = & dism.exe /Unmount-Wim /MountDir:"$wimMountDir" /Commit 2>&1
+                if ($LASTEXITCODE -eq 0) {
+                    $dismountSuccess = $true
+                }
+                else {
+                    Write-Log "  DISM output: $dismResult" -Level "ERROR"
+                }
             }
-        }
 
-        if (-not $dismountSuccess) {
-            # Last resort: try discard and throw error
-            Write-Log "  Attempting discard to recover..." -Level "WARNING"
-            & dism.exe /Unmount-Wim /MountDir:"$wimMountDir" /Discard 2>&1 | Out-Null
-            throw "Failed to save WIM changes. The mount was discarded."
-        }
+            if (-not $dismountSuccess) {
+                # Last resort: try discard and throw error
+                Write-Log "  Attempting discard to recover..." -Level "WARNING"
+                & dism.exe /Unmount-Wim /MountDir:"$wimMountDir" /Discard 2>&1 | Out-Null
+                throw "Failed to save WIM changes for image index $targetIndex. The mount was discarded."
+            }
 
-        Write-Log "  WIM saved" -Level "SUCCESS"
+            Write-Log "  Image index $targetIndex saved" -Level "SUCCESS"
+        }
 
         # Move WIM to ISO sources
-        Move-Item -Path $wimWorkFile -Destination (Join-Path $isoWorkDir "sources\install.wim") -Force
+        $destinationInstallWim = Join-Path $isoWorkDir "sources\install.wim"
+        if (Test-Path $destinationInstallWim) {
+            Remove-Item $destinationInstallWim -Force
+        }
+        Move-Item -Path $wimWorkFile -Destination $destinationInstallWim -Force
 
         # Create autounattend.xml
         Write-Log ""
@@ -1060,15 +1138,15 @@ function Build-CustomISO {
         $autounattendPath = Join-Path $isoWorkDir "autounattend.xml"
         New-AutounattendXml -OutputPath $autounattendPath `
             -EditionName $EditionName `
-            -ImageIndex 1 `
-            -ProductKey $EditionConfig.ProductKey `
+            -ImageIndex $UnattendImageIndex `
+            -ProductKey "" `
             -Locale $LocaleSettings
 
         # Create ISO with oscdimg
         Write-Log ""
         Write-Log "--- Creating final ISO ---"
 
-        $outputISO = Join-Path $OutputFolder $EditionConfig.OutputName
+        $outputISO = Join-Path $OutputFolder $OutputISOName
         $bootData = "2#p0,e,b`"$isoWorkDir\boot\etfsboot.com`"#pEF,e,b`"$isoWorkDir\efi\microsoft\boot\efisys.bin`""
 
         $oscdimgArgs = @(
@@ -1172,30 +1250,62 @@ try {
     Write-Log "--- Preparing tools ---"
     $oscdimgPath = Get-Oscdimg -DownloadPath $workingDir
 
-    # Build ISOs
+    # Build ISO(s)
     $createdISOs = @()
 
-    $editionsToBuild = if ($Edition -eq "Both") { @("Education", "Enterprise") } else { @($Edition) }
+    if ($Edition -eq "Both") {
+        Write-Log ""
 
-    foreach ($editionName in $editionsToBuild) {
+        # Download drivers for both editions and deduplicate paths
+        $driverPaths = @()
+        if (-not $SkipDrivers) {
+            Write-Log "--- Downloading HP WiFi drivers for Education + Enterprise ---"
+            $eduDriverPaths = Get-HPDrivers -DownloadPath $driversDir -Edition "Education"
+            $entDriverPaths = Get-HPDrivers -DownloadPath $driversDir -Edition "Enterprise"
+            $driverPaths = @($eduDriverPaths + $entDriverPaths | Where-Object { $_ } | Sort-Object -Unique)
+            Write-Log "Ready: $($driverPaths.Count) unique driver packages for multi-edition ISO"
+        }
+
+        $sourceIndexes = @(
+            [int]$EditionsConfig["Education"].ImageIndex,
+            [int]$EditionsConfig["Enterprise"].ImageIndex
+        )
+
+        $isoPath = Build-CustomISO `
+            -EditionName "Education-Enterprise" `
+            -EditionConfig $null `
+            -SourceISO $SourceISO `
+            -WorkingDir $workingDir `
+            -OutputFolder $OutputFolder `
+            -DriverPaths $driverPaths `
+            -OscdimgPath $oscdimgPath `
+            -SourceImageIndexes $sourceIndexes `
+            -UnattendImageIndex 0 `
+            -OutputISOName $MultiEditionOutputName
+
+        $createdISOs += $isoPath
+    }
+    else {
         Write-Log ""
 
         # Download HP drivers for this specific edition
         $driverPaths = @()
         if (-not $SkipDrivers) {
-            Write-Log "--- Downloading HP WiFi drivers for $editionName ---"
-            $driverPaths = Get-HPDrivers -DownloadPath $driversDir -Edition $editionName
-            Write-Log "Ready: $($driverPaths.Count) driver packages for $editionName"
+            Write-Log "--- Downloading HP WiFi drivers for $Edition ---"
+            $driverPaths = Get-HPDrivers -DownloadPath $driversDir -Edition $Edition
+            Write-Log "Ready: $($driverPaths.Count) driver packages for $Edition"
         }
 
         $isoPath = Build-CustomISO `
-            -EditionName $editionName `
-            -EditionConfig $EditionsConfig[$editionName] `
+            -EditionName $Edition `
+            -EditionConfig $EditionsConfig[$Edition] `
             -SourceISO $SourceISO `
             -WorkingDir $workingDir `
             -OutputFolder $OutputFolder `
             -DriverPaths $driverPaths `
-            -OscdimgPath $oscdimgPath
+            -OscdimgPath $oscdimgPath `
+            -SourceImageIndexes @([int]$EditionsConfig[$Edition].ImageIndex) `
+            -UnattendImageIndex 1
 
         $createdISOs += $isoPath
     }
