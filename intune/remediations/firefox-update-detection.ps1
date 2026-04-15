@@ -1,3 +1,10 @@
+# ============================================================================
+# Eriteach Scripts
+# Author: Robel (https://github.com/Thugney)
+# Repository: https://github.com/Thugney/eriteach-scripts
+# License: MIT
+# ============================================================================
+
 <#
 .SYNOPSIS
 Detects if Firefox needs updating.
@@ -8,7 +15,7 @@ Returns exit 1 if update needed, exit 0 if up to date or not installed.
 
 .NOTES
 Author: Eriteach
-Version: 1.0
+Version: 1.1
 Intune Run Context: System
 #>
 

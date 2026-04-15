@@ -1,3 +1,10 @@
+# ============================================================================
+# Eriteach Scripts
+# Author: Robel (https://github.com/Thugney)
+# Repository: https://github.com/Thugney/eriteach-scripts
+# License: MIT
+# ============================================================================
+
 <#
 .SYNOPSIS
 Detects if interactive login is restricted to the Intune primary user.
@@ -18,7 +25,7 @@ The script:
 
 .NOTES
 Author: Eriteach
-Version: 1.0
+Version: 1.1
 Intune Run Context: System
 #>
 

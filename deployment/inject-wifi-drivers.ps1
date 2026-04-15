@@ -1,3 +1,10 @@
+# ============================================================================
+# Eriteach Scripts
+# Author: Robel (https://github.com/Thugney)
+# Repository: https://github.com/Thugney/eriteach-scripts
+# License: MIT
+# ============================================================================
+
 <#
 .SYNOPSIS
     Injects HP WiFi, Touchpad, and Audio drivers into Windows 11 install.wim for offline deployment.
@@ -44,7 +51,7 @@
 
 .NOTES
     Author: Eriteach
-    Version: 2.0
+    Version: 2.1
     Requirements: Windows ADK (DISM), Administrator privileges
 #>
 

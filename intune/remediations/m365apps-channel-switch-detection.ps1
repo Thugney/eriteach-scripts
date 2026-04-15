@@ -1,3 +1,10 @@
+# ============================================================================
+# Eriteach Scripts
+# Author: Robel (https://github.com/Thugney)
+# Repository: https://github.com/Thugney/eriteach-scripts
+# License: MIT
+# ============================================================================
+
 <#
 .SYNOPSIS
     Detection script — checks M365 Apps channel and blocking registry keys
@@ -12,7 +19,7 @@
 
 .NOTES
     Author: Eriteach
-    Version: 1.0
+    Version: 1.1
     Intune Run Context: System
     Schedule: Daily
     Assignment: All Devices (Windows 10/11 filter)

@@ -1,3 +1,10 @@
+# ============================================================================
+# Eriteach Scripts
+# Author: Robel (https://github.com/Thugney)
+# Repository: https://github.com/Thugney/eriteach-scripts
+# License: MIT
+# ============================================================================
+
 <#
 .SYNOPSIS
     Removes bloatware and applies registry hardening.
@@ -14,8 +21,8 @@
     - Applies registry hardening (Copilot, Widgets, Telemetry, Ads)
 
 .NOTES
-    Author: robwol
-    Version: 2.0
+    Author: Eriteach
+    Version: 2.1
     Deployment: Win32 App Install Script
     Context: System
 

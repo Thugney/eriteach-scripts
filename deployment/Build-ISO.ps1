@@ -1,3 +1,10 @@
+# ============================================================================
+# Eriteach Scripts
+# Author: Robel (https://github.com/Thugney)
+# Repository: https://github.com/Thugney/eriteach-scripts
+# License: MIT
+# ============================================================================
+
 <#
 .SYNOPSIS
     Builds customized, debloated Windows 11 ISOs for organizational deployment.
@@ -18,6 +25,12 @@
 
 .PARAMETER Edition
     Which edition to build: "Education", "Enterprise", or "Both"
+
+.NOTES
+    Author: Eriteach
+    Version: 1.1
+    Intune Run Context: N/A (Build Script)
+#>
 
 .PARAMETER SkipDrivers
     Skip HP WiFi driver injection (for testing).

@@ -1,3 +1,10 @@
+# ============================================================================
+# Eriteach Scripts
+# Author: Robel (https://github.com/Thugney)
+# Repository: https://github.com/Thugney/eriteach-scripts
+# License: MIT
+# ============================================================================
+
 <#
 .SYNOPSIS
     Detects if bloatware is present on the device.
@@ -11,8 +18,8 @@
     - Exit 1 = Bloatware FOUND (non-compliant - needs remediation)
 
 .NOTES
-    Author: robwol
-    Version: 2.0
+    Author: Eriteach
+    Version: 2.1
     Deployment: Win32 App Detection Script
     Context: System
 

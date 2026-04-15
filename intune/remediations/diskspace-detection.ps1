@@ -1,3 +1,10 @@
+# ============================================================================
+# Eriteach Scripts
+# Author: Robel (https://github.com/Thugney)
+# Repository: https://github.com/Thugney/eriteach-scripts
+# License: MIT
+# ============================================================================
+
 <#
 .SYNOPSIS
     Detects low disk space on C: drive using dual thresholds.
@@ -11,7 +18,7 @@
 
 .NOTES
     Author: Eriteach
-    Version: 1.0
+    Version: 1.1
     Intune Run Context: System
 #>
 

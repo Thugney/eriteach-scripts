@@ -1,3 +1,10 @@
+# ============================================================================
+# Eriteach Scripts
+# Author: Robel (https://github.com/Thugney)
+# Repository: https://github.com/Thugney/eriteach-scripts
+# License: MIT
+# ============================================================================
+
 <#
 .SYNOPSIS
 Proactive Remediation - Detects Firefox installations
@@ -15,7 +22,7 @@ Exit 1 = Non-compliant (Firefox found)
 
 .NOTES
 Author: Eriteach
-Version: 2.0
+Version: 2.1
 Intune Run Context: System (64-bit)
 #>
 

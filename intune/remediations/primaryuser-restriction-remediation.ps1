@@ -1,3 +1,10 @@
+# ============================================================================
+# Eriteach Scripts
+# Author: Robel (https://github.com/Thugney)
+# Repository: https://github.com/Thugney/eriteach-scripts
+# License: MIT
+# ============================================================================
+
 <#
 .SYNOPSIS
 Restricts interactive login to only the Intune primary user and Administrators.
@@ -23,7 +30,7 @@ Shows what the script would do without making any changes.
 
 .NOTES
 Author: Eriteach
-Version: 1.0
+Version: 1.1
 Intune Run Context: System
 #>
 

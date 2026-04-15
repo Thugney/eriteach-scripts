@@ -1,3 +1,10 @@
+# ============================================================================
+# Eriteach Scripts
+# Author: Robel (https://github.com/Thugney)
+# Repository: https://github.com/Thugney/eriteach-scripts
+# License: MIT
+# ============================================================================
+
 <#
 .SYNOPSIS
 Proactive Remediation - Removes Firefox installations
@@ -19,7 +26,7 @@ Exit 1 = Failed (some items could not be removed)
 
 .NOTES
 Author: Eriteach
-Version: 2.0
+Version: 2.1
 Intune Run Context: System (64-bit)
 #>
 

@@ -1,3 +1,10 @@
+# ============================================================================
+# Eriteach Scripts
+# Author: Robel (https://github.com/Thugney)
+# Repository: https://github.com/Thugney/eriteach-scripts
+# License: MIT
+# ============================================================================
+
 <#
 .SYNOPSIS
     Silently cleans C: drive without GUI interaction.
@@ -10,7 +17,7 @@
 
 .NOTES
     Author: Eriteach
-    Version: 1.0
+    Version: 1.1
     Intune Run Context: System
     Log: C:\ProgramData\Intune\Logs\DiskSpace-Remediation.log
 #>

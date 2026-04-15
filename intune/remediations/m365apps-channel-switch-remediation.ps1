@@ -1,3 +1,10 @@
+# ============================================================================
+# Eriteach Scripts
+# Author: Robel (https://github.com/Thugney)
+# Repository: https://github.com/Thugney/eriteach-scripts
+# License: MIT
+# ============================================================================
+
 <#
 .SYNOPSIS
     Remediation script — switches M365 Apps to Monthly Enterprise Channel
@@ -16,7 +23,7 @@
 
 .NOTES
     Author: Eriteach
-    Version: 1.0
+    Version: 1.1
     Intune Run Context: System
     Assignment: All Devices (Windows 10/11 filter)
 #>
