@@ -10,9 +10,9 @@ PowerShell scripts for **Intune**, **Autopilot**, and **Microsoft 365** manageme
 
 ## About
 
-These scripts are created by **Robel Mehari**, Microsoft 365 Security Specialist managing 4,000+ users and 6,000+ endpoints. Each script solves a real problem encountered in production environments.
+This repository contains a collection of scripts developed for Microsoft 365 and Intune administration. The focus is on automation, security hardening, and endpoint hygiene in production environments.
 
-Scripts are documented on [blog.eriteach.com](https://blog.eriteach.com) with step-by-step guides.
+Detailed technical guides for these scripts can be found on [blog.eriteach.com](https://blog.eriteach.com).
 
 ## Structure
 
@@ -24,14 +24,14 @@ eriteach-scripts/
 └── deployment/           # OS deployment and imaging scripts
 ```
 
-*More folders (autopilot, defender, purview, graph) will be added as content grows.*
-
 ## Scripts
 
-### Intune Remediations
+### Intune Remediations (Proactive Remediations)
 
 | Script | Purpose |
 |--------|---------|
+| [`zombie-apps-detection.ps1`](intune/remediations/zombie-apps-detection.ps1) | **NEW:** Detects unauthorized or EOL "zombie" software |
+| [`zombie-apps-removal.ps1`](intune/remediations/zombie-apps-removal.ps1) | **NEW:** Silently uninstalls detected zombie apps |
 | [`firefox-update-detection.ps1`](intune/remediations/firefox-update-detection.ps1) | Detects if Firefox needs updating |
 | [`firefox-update-remediation.ps1`](intune/remediations/firefox-update-remediation.ps1) | Downloads and installs latest Firefox |
 | [`firefox-removal-detection.ps1`](intune/remediations/firefox-removal-detection.ps1) | Detects Firefox installations |
@@ -54,14 +54,29 @@ eriteach-scripts/
 
 | Script | Purpose |
 |--------|---------|
-| [`inject-wifi-drivers.ps1`](deployment/inject-wifi-drivers.ps1) | Injects HP WiFi drivers into Windows 11 install.wim |
 | [`Build-ISO.ps1`](deployment/Build-ISO.ps1) | Creates debloated Windows 11 ISOs with WiFi drivers and Autopilot-compatible OOBE |
+| [`inject-wifi-drivers.ps1`](deployment/inject-wifi-drivers.ps1) | Injects HP WiFi drivers into Windows 11 install.wim |
 | [`autounattend-education.xml`](deployment/autounattend-education.xml) | Autopilot-compatible autounattend for Windows 11 Education |
 | [`autounattend-enterprise.xml`](deployment/autounattend-enterprise.xml) | Autopilot-compatible autounattend for Windows 11 Enterprise |
 
-## Usage
+## Implementation Guide: Proactive Remediations
 
-Each script includes a standard header:
+To use these scripts in Microsoft Intune:
+
+1.  Navigate to **Devices** > **Scripts and remediations** > **Remediations**.
+2.  Click **Create**.
+3.  **Basics:** Provide a name (e.g., "Remediate - Zombie Software").
+4.  **Settings:**
+    *   **Detection script file:** Upload the `*-detection.ps1` script.
+    *   **Remediation script file:** Upload the `*-remediation.ps1` (or `*-removal.ps1`) script.
+    *   **Run this script using the logged-on credentials:** No.
+    *   **Enforce script signature check:** No (unless you sign your scripts).
+    *   **Run script in 64-bit PowerShell:** Yes.
+5.  **Assignments:** Assign to a test group before a broad rollout.
+
+## Usage (Script Header)
+
+Each script includes a standard header for consistency:
 
 ```powershell
 # ============================================================================
@@ -80,7 +95,7 @@ How it works.
 
 .NOTES
 Author: Eriteach
-Version: 1.0
+Version: 1.1
 Intune Run Context: System | User
 #>
 ```
