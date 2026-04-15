@@ -1,3 +1,10 @@
+# ============================================================================
+# Eriteach Scripts
+# Author: Robel (https://github.com/Thugney)
+# Repository: https://github.com/Thugney/eriteach-scripts
+# License: MIT
+# ============================================================================
+
 <#
 .SYNOPSIS
     Remediation script for removing unauthorized or end-of-support software ("Zombie Software").
@@ -6,8 +13,10 @@
     Automatically uninstalls unauthorized or deprecated software detected by the companion script.
     Supports registry-based uninstalls (MSI, InnoSetup, NSIS) and file system cleanup.
 
+    Designed for use with Intune Proactive Remediation.
+
 .NOTES
-    Author: eriteach
+    Author: Eriteach
     Version: 1.1
     Intune Run Context: System
 #>

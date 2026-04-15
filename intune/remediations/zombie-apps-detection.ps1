@@ -1,3 +1,10 @@
+# ============================================================================
+# Eriteach Scripts
+# Author: Robel (https://github.com/Thugney)
+# Repository: https://github.com/Thugney/eriteach-scripts
+# License: MIT
+# ============================================================================
+
 <#
 .SYNOPSIS
     Detection script for unauthorized or end-of-support software ("Zombie Software").
@@ -9,7 +16,7 @@
     Designed for use with Intune Proactive Remediation.
 
 .NOTES
-    Author: eriteach
+    Author: Eriteach
     Version: 1.1
     Intune Run Context: System
 #>
