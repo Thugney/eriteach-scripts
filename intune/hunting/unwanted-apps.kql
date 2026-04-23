@@ -1,0 +1,124 @@
+// =====================================================================
+// UNWANTED APPS - Fleet-wide Discovery & Risk Scoring
+// Use this KQL in Microsoft Defender Advanced Hunting to identify 
+// unauthorized software before automating removal with Intune.
+// =====================================================================
+let LookbackDays = 7;
+// ---------- SAMPLE LISTS (Replace with your actual targets) ----------
+let HighRiskApps = dynamic([
+    "utorrent", "anydesk", "app_placeholder_1"
+]);
+let MediumRiskApps = dynamic([
+    "steam", "bluestacks", "app_placeholder_2"
+]);
+let LowRiskApps = dynamic([
+    "ccleaner", "app_placeholder_3"
+]);
+// Approved exclusions (e.g. specific roles)
+let UnwantedExclusions = dynamic([
+    // "teamviewer"
+]);
+// ---------- REGEX ----------
+let HighRegex      = strcat(@"(?i)(", strcat_array(HighRiskApps,       "|"), ")");
+let MediumRegex    = strcat(@"(?i)(", strcat_array(MediumRiskApps,     "|"), ")");
+let LowRegex       = strcat(@"(?i)(", strcat_array(LowRiskApps,        "|"), ")");
+let UnwantedRegex  = strcat(@"(?i)(",
+                           strcat_array(HighRiskApps,   "|"), "|",
+                           strcat_array(MediumRiskApps, "|"), "|",
+                           strcat_array(LowRiskApps,    "|"), ")");
+let ExclusionRegex =
+    iff(array_length(UnwantedExclusions) > 0,
+        strcat(@"(?i)(", strcat_array(UnwantedExclusions, "|"), ")"),
+        @"__NO_EXCLUSIONS__");
+// ---------- INVENTORY ----------
+let Inventory =
+    DeviceTvmSoftwareInventory
+    | where isnotempty(SoftwareName) and isnotempty(DeviceName)
+    | extend MatchTarget = tolower(strcat(coalesce(SoftwareVendor, ""),
+                                          " ", SoftwareName))
+    | where MatchTarget matches regex UnwantedRegex
+    | extend UnwantedSeverity = case(
+        MatchTarget matches regex HighRegex,   "High",
+        MatchTarget matches regex MediumRegex, "Medium",
+        MatchTarget matches regex LowRegex,    "Low",
+                                               "Unknown"),
+             IsExcluded = MatchTarget matches regex ExclusionRegex
+    | project DeviceId, DeviceName, OSPlatform,
+              SoftwareVendor, SoftwareName, SoftwareVersion,
+              MatchTarget, UnwantedSeverity, IsExcluded;
+// ---------- CVE CORRELATION ----------
+let CveKB =
+    DeviceTvmSoftwareVulnerabilitiesKB
+    | project CveId,
+              CvssScoreNum = todouble(CvssScore),
+              IsExploitAvailable;
+let Vulns =
+    DeviceTvmSoftwareVulnerabilities
+    | where isnotempty(CveId)
+    | join kind=leftouter CveKB on CveId
+    | summarize
+        CveCount        = dcount(CveId),
+        MaxCvss         = max(CvssScoreNum),
+        CriticalCves    = countif(VulnerabilitySeverityLevel == "Critical"),
+        HighCves        = countif(VulnerabilitySeverityLevel == "High"),
+        ExploitableCves = countif(IsExploitAvailable == true)
+      by DeviceId, SoftwareVendor, SoftwareName, SoftwareVersion;
+// ---------- USER-SCOPE EXECUTION CONTEXT ----------
+let UserPathContext =
+    DeviceProcessEvents
+    | where Timestamp > ago(LookbackDays * 1d)
+    | where FolderPath has_any (@"\AppData\Local\", @"\AppData\Roaming\",
+                                @"\Users\Public\", @"\Downloads\")
+    | extend ProcMatch = tolower(strcat(FolderPath, " ", FileName))
+    | where ProcMatch matches regex UnwantedRegex
+    | summarize
+        FirstSeen    = min(Timestamp),
+        LastSeen     = max(Timestamp),
+        SampleFolder = any(FolderPath),
+        ExecCount    = count()
+      by DeviceId, ProcNameKey = extract(UnwantedRegex, 1, ProcMatch);
+// ---------- MAIN PIPELINE ----------
+Inventory
+| join kind=leftouter Vulns
+    on $left.DeviceId       == $right.DeviceId
+   and $left.SoftwareVendor == $right.SoftwareVendor
+   and $left.SoftwareName   == $right.SoftwareName
+   and $left.SoftwareVersion== $right.SoftwareVersion
+| extend SoftwareKey = extract(UnwantedRegex, 1, MatchTarget)
+| join kind=leftouter UserPathContext
+    on $left.DeviceId    == $right.DeviceId
+   and $left.SoftwareKey == $right.ProcNameKey
+| extend
+    IsUserScope     = isnotempty(SampleFolder),
+    MaxCvssCoalesce = coalesce(MaxCvss, real(0)),
+    CritCoalesce    = coalesce(CriticalCves, 0),
+    HighCoalesce    = coalesce(HighCves, 0),
+    ExplCoalesce    = coalesce(ExploitableCves, 0),
+    BaseWeight      = case(UnwantedSeverity == "High",   60.0,
+                           UnwantedSeverity == "Medium", 30.0,
+                           UnwantedSeverity == "Low",    15.0,
+                                                          5.0)
+| extend
+    InstallContext = iff(IsUserScope, "User-scope", "Machine-scope/Unknown"),
+    ExposureScore  = BaseWeight
+                   + (MaxCvssCoalesce * 5.0)
+                   + (todouble(CritCoalesce) * 25.0)
+                   + (todouble(HighCoalesce) * 10.0)
+                   + (todouble(ExplCoalesce) * 15.0)
+                   + iff(IsUserScope, 20.0, 0.0),
+    Classification = iff(IsExcluded, "exclude", "remove"),
+    RecommendedAction = case(
+        IsExcluded,                              "Keep - approved exception",
+        UnwantedSeverity == "High",              "Remove immediately - Proactive Remediation",
+        UnwantedSeverity == "Medium",            "Remove in next maintenance window",
+        UnwantedSeverity == "Low",               "Remove via user self-service or next refresh",
+                                                 "Review")
+| project
+    Timestamp = now(),
+    DeviceName, DeviceId, OSPlatform,
+    SoftwareVendor, SoftwareName, SoftwareVersion,
+    UnwantedSeverity, InstallContext, SampleFolder,
+    CveCount, CriticalCves, HighCves, ExploitableCves, MaxCvss,
+    ExposureScore, Classification, RecommendedAction,
+    FirstSeen, LastSeen, ExecCount
+| order by ExposureScore desc, DeviceName asc

@@ -1,0 +1,31 @@
+// =====================================================================
+// EOS AND UNWANTED APPS - Executive Summary Dashboard
+// Joins End-of-Support (EOS) inventory with unauthorized software
+// to provide a fleet-wide risk overview.
+// =====================================================================
+let UnwantedResult = 
+    DeviceTvmSoftwareInventory
+    | where isnotempty(SoftwareName)
+    | extend MatchTarget = tolower(strcat(coalesce(SoftwareVendor,""),
+                                          " ", SoftwareName))
+    | where MatchTarget matches regex
+        @"(?i)(utorrent|anydesk|steam|ccleaner|app_placeholder_1|app_placeholder_2)"
+    | project DeviceId, DeviceName, OSPlatform,
+              SoftwareName, SoftwareVersion,
+              Category = "Unwanted";
+let EOSResult =
+    DeviceTvmSoftwareInventory
+    | where isnotempty(SoftwareName)
+    | where isnotempty(EndOfSupportStatus)
+          and EndOfSupportStatus in ("EOS Software", "EOS Version")
+    | project DeviceId, DeviceName, OSPlatform,
+              SoftwareName, SoftwareVersion,
+              Category = "EOS";
+union UnwantedResult, EOSResult
+| summarize
+    UnwantedCount = countif(Category == "Unwanted"),
+    EOSCount      = countif(Category == "EOS"),
+    TotalFindings = count(),
+    AppList       = make_set(SoftwareName, 100)
+  by DeviceName, DeviceId, OSPlatform
+| order by TotalFindings desc
