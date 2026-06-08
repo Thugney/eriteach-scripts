@@ -1,0 +1,8 @@
+// Defender engine/platform inventory via TVM software inventory
+// Purpose: quick check if Defender engine/platform version data is visible in TVM.
+// Note: Some tenants do not expose Malware Protection Engine / Platform as normal software inventory rows.
+DeviceTvmSoftwareInventory
+| where SoftwareName has_any ("microsoft defender", "defender antivirus", "malware protection engine", "antimalware platform")
+| extend Version = tostring(SoftwareVersion)
+| project DeviceName, DeviceId, OSPlatform, SoftwareVendor, SoftwareName, Version, EndOfSupportStatus, EndOfSupportDate
+| order by DeviceName asc, SoftwareName asc

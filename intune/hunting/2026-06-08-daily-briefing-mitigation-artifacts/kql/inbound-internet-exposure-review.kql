@@ -1,0 +1,7 @@
+// Inbound internet exposure review
+// Purpose: support Defender Exposure Management recommendation review for unnecessary inbound exposure.
+DeviceNetworkEvents
+| where Timestamp > ago(7d)
+| where ActionType in ("InboundConnectionAccepted", "ListeningConnectionCreated")
+| summarize Events=count(), RemoteIPs=dcount(RemoteIP), ExampleRemoteIPs=make_set(RemoteIP, 10) by DeviceName, DeviceId, LocalPort, Protocol, InitiatingProcessFileName
+| order by Events desc

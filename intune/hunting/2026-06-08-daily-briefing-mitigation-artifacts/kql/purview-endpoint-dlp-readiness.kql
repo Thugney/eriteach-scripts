@@ -1,0 +1,8 @@
+// Purview Endpoint DLP readiness via Defender Advanced Hunting
+// Purpose: expose DLP device attributes at scale from DeviceInfo.DlpInfo.
+DeviceInfo
+| where Timestamp > ago(7d)
+| summarize arg_max(Timestamp, *) by DeviceId
+| extend DlpInfoString = tostring(DlpInfo)
+| project DeviceName, DeviceId, OSPlatform, OSVersion, DeviceType, DlpInfoString, Timestamp
+| order by Timestamp desc

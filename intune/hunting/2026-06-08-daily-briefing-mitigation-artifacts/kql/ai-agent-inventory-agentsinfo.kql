@@ -1,0 +1,5 @@
+// AI agent inventory using AgentsInfo
+// Purpose: migrate away from AIAgentsInfo before Microsoft removes old table access.
+AgentsInfo
+| summarize Latest=max(Timestamp) by AgentId, AgentName, AgentType, SourceSystem, Owner, CreatedBy
+| order by Latest desc

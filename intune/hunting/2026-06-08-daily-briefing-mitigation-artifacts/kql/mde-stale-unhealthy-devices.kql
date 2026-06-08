@@ -1,0 +1,9 @@
+// MDE stale or unhealthy endpoint triage
+// Purpose: find devices likely to miss Defender engine/platform/security intelligence updates.
+let StaleAfterDays = 3;
+DeviceInfo
+| summarize arg_max(Timestamp, *) by DeviceId
+| extend LastSeenAgeDays = datetime_diff("day", now(), Timestamp)
+| where LastSeenAgeDays >= StaleAfterDays or SensorHealthState != "Active"
+| project DeviceName, DeviceId, OSPlatform, OSVersion, Timestamp, LastSeenAgeDays, SensorHealthState, OnboardingStatus, ExposureLevel, RiskScore
+| order by LastSeenAgeDays desc, RiskScore desc, DeviceName asc

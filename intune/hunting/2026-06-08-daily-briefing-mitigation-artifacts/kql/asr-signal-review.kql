@@ -1,0 +1,7 @@
+// ASR signal review
+// Purpose: review ASR audit/block events before changing ASR enforcement or exceptions.
+DeviceEvents
+| where Timestamp > ago(14d)
+| where ActionType startswith "Asr"
+| summarize Events=count(), Devices=dcount(DeviceName), ExampleDevices=make_set(DeviceName, 10) by ActionType, InitiatingProcessFileName, FileName
+| order by Events desc
