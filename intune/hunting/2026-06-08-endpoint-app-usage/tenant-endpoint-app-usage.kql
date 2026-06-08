@@ -1,0 +1,47 @@
+// =====================================================================
+// TENANT ENDPOINT APP USAGE - Defender Advanced Hunting
+// Purpose: identify applications actually executed by endpoint clients.
+// Recommended lookback: 45 days.
+// Export script: Export-TenantEndpointAppUsage.ps1
+// =====================================================================
+let Lookback = 45d;
+let IncludeSystemComponents = false;
+DeviceProcessEvents
+| where Timestamp >= ago(Lookback)
+| where ActionType == "ProcessCreated"
+| where isnotempty(DeviceName) and isnotempty(FileName)
+| extend ProductNameRaw = tostring(ProcessVersionInfoProductName)
+| extend FileDescriptionRaw = tostring(ProcessVersionInfoFileDescription)
+| extend PublisherRaw = tostring(ProcessVersionInfoCompanyName)
+| extend AppName = case(
+    isnotempty(ProductNameRaw), ProductNameRaw,
+    isnotempty(FileDescriptionRaw), FileDescriptionRaw,
+    FileName
+)
+| extend Publisher = iff(isempty(PublisherRaw), "Unknown", PublisherRaw)
+| extend AppKey = tolower(replace_regex(AppName, @"[^A-Za-z0-9]+", " "))
+| where IncludeSystemComponents == true
+    or not(
+        (Publisher has "Microsoft" or Publisher has "Windows")
+        and FolderPath startswith @"C:\Windows\"
+    )
+| where IncludeSystemComponents == true
+    or not(FileName in~ (
+        "svchost.exe", "dllhost.exe", "conhost.exe", "rundll32.exe", "regsvr32.exe", "backgroundtaskhost.exe",
+        "runtimebroker.exe", "sihost.exe", "taskhostw.exe", "searchindexer.exe", "searchprotocolhost.exe",
+        "searchfilterhost.exe", "fontdrvhost.exe", "audiodg.exe", "wermgr.exe", "werfault.exe"
+    ))
+| summarize
+    ExecutionCount = count(),
+    DeviceCount = dcount(DeviceId),
+    UserCount = dcount(AccountUpn),
+    FirstSeen = min(Timestamp),
+    LastSeen = max(Timestamp),
+    ExampleDevices = make_set(DeviceName, 10),
+    ExampleUsers = make_set(AccountUpn, 10),
+    ExamplePaths = make_set(FolderPath, 10),
+    FileNames = make_set(FileName, 20),
+    SHA256s = make_set(SHA256, 20)
+  by AppName, AppKey, Publisher
+| extend Source = "Defender Process Execution"
+| order by DeviceCount desc, ExecutionCount desc
