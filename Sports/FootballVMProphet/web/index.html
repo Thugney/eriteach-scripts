@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Football VM Prophet</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Football VM Prophet</h1>
+      <p>FIFA World Cup 2026 free local dashboard</p>
+    </div>
+    <button id="refreshButton">Refresh</button>
+  </header>
+
+  <section id="healthBanner" class="health-banner">Loading data health...</section>
+
+  <main class="layout">
+    <aside class="filters">
+      <h2>Filters</h2>
+      <label>View
+        <select id="viewFilter">
+          <option value="all">All</option>
+          <option value="today">Today</option>
+          <option value="live">Live</option>
+          <option value="upcoming">Upcoming</option>
+          <option value="past">Past</option>
+          <option value="due">Due soon (24h)</option>
+          <option value="stale">Stale / fixture-only</option>
+        </select>
+      </label>
+      <label>Team
+        <input id="teamFilter" placeholder="Brazil, Norway, TBD...">
+      </label>
+      <label>Stage
+        <input id="stageFilter" placeholder="Group, R16, Final...">
+      </label>
+      <label>Venue
+        <input id="venueFilter" placeholder="stadium/city">
+      </label>
+      <label>Search
+        <input id="searchFilter" placeholder="anything">
+      </label>
+      <div class="small" id="lastRefresh"></div>
+    </aside>
+
+    <section class="content">
+      <section class="cards stats" id="stats"></section>
+      <section>
+        <h2>Matches</h2>
+        <div id="matches" class="match-list"></div>
+      </section>
+      <section>
+        <h2>Betting Board <span class="tag">manual/free mode</span></h2>
+        <div id="oddsBoard" class="odds-board"></div>
+      </section>
+      <section>
+        <h2>Data Health</h2>
+        <pre id="healthDetails" class="health-details"></pre>
+      </section>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

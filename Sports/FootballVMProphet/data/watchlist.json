@@ -1,0 +1,6 @@
+{
+  "teams": [],
+  "markets": ["1X2", "OverUnder", "BTTS"],
+  "alertHoursBeforeKickoff": 6,
+  "notes": "Add teams after the official draw, for example: Norway, Brazil, England."
+}
