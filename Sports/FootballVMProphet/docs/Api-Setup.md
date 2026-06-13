@@ -29,7 +29,7 @@ Free plan notes:
 PowerShell setup:
 
 ```powershell
-$env:FOOTBALL_DATA_API_KEY = "paste-your-football-data-key-here"
+$env:FOOTBALL_DATA_API_KEY = "<football-data-api-value>"
 $env:FOOTBALL_DATA_COMPETITION = "WC"
 $env:FOOTBALL_DATA_DATE_FROM = "2026-06-01"
 $env:FOOTBALL_DATA_DATE_TO = "2026-07-31"
@@ -39,7 +39,7 @@ npm start
 Linux/macOS setup:
 
 ```bash
-export FOOTBALL_DATA_API_KEY="paste-your-football-data-key-here"
+export FOOTBALL_DATA_API_KEY="<football-data-api-value>"
 export FOOTBALL_DATA_COMPETITION="WC"
 export FOOTBALL_DATA_DATE_FROM="2026-06-01"
 export FOOTBALL_DATA_DATE_TO="2026-07-31"
@@ -67,7 +67,7 @@ Free plan notes:
 PowerShell setup:
 
 ```powershell
-$env:ODDS_API_KEY = "paste-your-odds-api-key-here"
+$env:ODDS_API_KEY = "<odds-api-value>"
 $env:ODDS_API_SPORT = "soccer_fifa_world_cup"
 $env:ODDS_API_REGIONS = "eu,uk"
 $env:ODDS_API_MARKETS = "h2h"
@@ -77,7 +77,7 @@ npm start
 Linux/macOS setup:
 
 ```bash
-export ODDS_API_KEY="paste-your-odds-api-key-here"
+export ODDS_API_KEY="<odds-api-value>"
 export ODDS_API_SPORT="soccer_fifa_world_cup"
 export ODDS_API_REGIONS="eu,uk"
 export ODDS_API_MARKETS="h2h"
@@ -90,8 +90,8 @@ From the repo root:
 
 ```powershell
 cd Sports\FootballVMProphet
-$env:FOOTBALL_DATA_API_KEY = "paste-your-football-data-key-here"
-$env:ODDS_API_KEY = "paste-your-odds-api-key-here"
+$env:FOOTBALL_DATA_API_KEY = "<football-data-api-value>"
+$env:ODDS_API_KEY = "<odds-api-value>"
 npm install
 npm test
 npm start

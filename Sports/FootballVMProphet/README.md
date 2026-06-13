@@ -63,8 +63,8 @@ PowerShell:
 
 ```powershell
 cd Sports\FootballVMProphet
-$env:FOOTBALL_DATA_API_KEY = "paste-your-football-data-key-here"
-$env:ODDS_API_KEY = "paste-your-odds-api-key-here"
+$env:FOOTBALL_DATA_API_KEY = "<football-data-api-value>"
+$env:ODDS_API_KEY = "<odds-api-value>"
 $env:FOOTBALL_DATA_COMPETITION = "WC"
 $env:FOOTBALL_DATA_DATE_FROM = "2026-06-01"
 $env:FOOTBALL_DATA_DATE_TO = "2026-07-31"
