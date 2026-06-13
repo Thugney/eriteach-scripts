@@ -29,7 +29,7 @@ Free plan notes:
 PowerShell setup:
 
 ```powershell
-$env:FOOTBALL_DATA_API_KEY = "<football-data-api-value>"
+$env:FOOTBALL_DATA_API_KEY = Read-Host "football-data.org API value"
 $env:FOOTBALL_DATA_COMPETITION = "WC"
 $env:FOOTBALL_DATA_DATE_FROM = "2026-06-01"
 $env:FOOTBALL_DATA_DATE_TO = "2026-07-31"
@@ -39,7 +39,7 @@ npm start
 Linux/macOS setup:
 
 ```bash
-export FOOTBALL_DATA_API_KEY="<football-data-api-value>"
+read -rsp "football-data.org API value: " FOOTBALL_DATA_API_KEY; export FOOTBALL_DATA_API_KEY
 export FOOTBALL_DATA_COMPETITION="WC"
 export FOOTBALL_DATA_DATE_FROM="2026-06-01"
 export FOOTBALL_DATA_DATE_TO="2026-07-31"
@@ -55,19 +55,19 @@ Get a free API key:
 1. Go to `https://the-odds-api.com/`.
 2. Select **Get API Key**.
 3. Choose the free starter tier.
-4. Copy the API key from the email/account page.
+4. Copy the API value from the email/account page.
 
 Free plan notes:
 
 - The free plan has limited monthly credits.
 - World Cup markets might not appear until bookmakers publish odds.
 - Sport keys can change or be unavailable until the event is close.
-- If the default sport key returns errors, check the `/v4/sports` endpoint in The Odds API documentation and set `ODDS_API_SPORT` accordingly.
+- If the default sport key returns errors, check the sports endpoint in The Odds API documentation and set `ODDS_API_SPORT` accordingly.
 
 PowerShell setup:
 
 ```powershell
-$env:ODDS_API_KEY = "<odds-api-value>"
+$env:ODDS_API_KEY = Read-Host "The Odds API value"
 $env:ODDS_API_SPORT = "soccer_fifa_world_cup"
 $env:ODDS_API_REGIONS = "eu,uk"
 $env:ODDS_API_MARKETS = "h2h"
@@ -77,7 +77,7 @@ npm start
 Linux/macOS setup:
 
 ```bash
-export ODDS_API_KEY="<odds-api-value>"
+read -rsp "The Odds API value: " ODDS_API_KEY; export ODDS_API_KEY
 export ODDS_API_SPORT="soccer_fifa_world_cup"
 export ODDS_API_REGIONS="eu,uk"
 export ODDS_API_MARKETS="h2h"
@@ -90,8 +90,8 @@ From the repo root:
 
 ```powershell
 cd Sports\FootballVMProphet
-$env:FOOTBALL_DATA_API_KEY = "<football-data-api-value>"
-$env:ODDS_API_KEY = "<odds-api-value>"
+$env:FOOTBALL_DATA_API_KEY = Read-Host "football-data.org API value"
+$env:ODDS_API_KEY = Read-Host "The Odds API value"
 npm install
 npm test
 npm start
