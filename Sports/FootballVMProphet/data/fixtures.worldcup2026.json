@@ -1,0 +1,75 @@
+{
+  "dataQuality": "seed",
+  "tournament": {
+    "name": "FIFA World Cup 2026 Men",
+    "timezone": "Europe/Oslo",
+    "note": "Seed schedule structure only. Replace TBD fixtures after the official draw and match schedule are confirmed."
+  },
+  "matches": [
+    {
+      "matchId": "wc2026-g01-m01",
+      "stage": "Group Stage",
+      "group": "Group A",
+      "homeTeam": "TBD A1",
+      "awayTeam": "TBD A2",
+      "kickoffUtc": "2026-06-11T19:00:00Z",
+      "venue": "Estadio Azteca",
+      "city": "Mexico City",
+      "status": "scheduled",
+      "homeScore": null,
+      "awayScore": null
+    },
+    {
+      "matchId": "wc2026-g01-m02",
+      "stage": "Group Stage",
+      "group": "Group B",
+      "homeTeam": "TBD B1",
+      "awayTeam": "TBD B2",
+      "kickoffUtc": "2026-06-12T19:00:00Z",
+      "venue": "BMO Field",
+      "city": "Toronto",
+      "status": "scheduled",
+      "homeScore": null,
+      "awayScore": null
+    },
+    {
+      "matchId": "wc2026-g01-m03",
+      "stage": "Group Stage",
+      "group": "Group C",
+      "homeTeam": "TBD C1",
+      "awayTeam": "TBD C2",
+      "kickoffUtc": "2026-06-12T22:00:00Z",
+      "venue": "SoFi Stadium",
+      "city": "Los Angeles",
+      "status": "scheduled",
+      "homeScore": null,
+      "awayScore": null
+    },
+    {
+      "matchId": "wc2026-r16-m01",
+      "stage": "Round of 32",
+      "group": "Knockout",
+      "homeTeam": "TBD R32-1",
+      "awayTeam": "TBD R32-2",
+      "kickoffUtc": "2026-06-28T19:00:00Z",
+      "venue": "TBD",
+      "city": "TBD",
+      "status": "scheduled",
+      "homeScore": null,
+      "awayScore": null
+    },
+    {
+      "matchId": "wc2026-final",
+      "stage": "Final",
+      "group": "Knockout",
+      "homeTeam": "TBD Finalist 1",
+      "awayTeam": "TBD Finalist 2",
+      "kickoffUtc": "2026-07-19T19:00:00Z",
+      "venue": "MetLife Stadium",
+      "city": "New York/New Jersey",
+      "status": "scheduled",
+      "homeScore": null,
+      "awayScore": null
+    }
+  ]
+}
