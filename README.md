@@ -42,6 +42,7 @@ eriteach-scripts/
 | [`diskspace-remediation.ps1`](intune/remediations/diskspace-remediation.ps1) | Cleans temp files, caches, logs, recycle bin |
 | [`m365apps-channel-switch-detection.ps1`](intune/remediations/m365apps-channel-switch-detection.ps1) | Detects wrong M365 Apps update channel |
 | [`m365apps-channel-switch-remediation.ps1`](intune/remediations/m365apps-channel-switch-remediation.ps1) | Switches to Monthly Enterprise Channel |
+| [`windows-update-health/`](intune/remediations/windows-update-health/) | **NEW:** Conservative Windows Update health detection/remediation pair for Intune |
 
 ### Intune Win32 Apps
 

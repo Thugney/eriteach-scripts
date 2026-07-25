@@ -1,0 +1,11 @@
+flowchart LR
+  Admin[Intune admin] --> Package[Intune remediation package]
+  Package --> Detect[Detection script]
+  Detect -->|exit 0| Done[No remediation]
+  Detect -->|exit 1| Remediate[Remediation script]
+  Remediate --> Services[Start/correct services]
+  Remediate --> Queue[Clean stale BITS queue]
+  Remediate --> Cache[Ensure cache folder]
+  Remediate --> Logs[Local MK logs]
+  Package --> Reports[Intune reporting]
+  Reports --> Admin

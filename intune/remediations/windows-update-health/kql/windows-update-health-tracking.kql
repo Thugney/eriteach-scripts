@@ -1,0 +1,8 @@
+// Windows Update health tracking starter
+// Purpose: pair Intune remediation deployment with Defender/Intune update posture review.
+// Notes: table availability differs by tenant/licensing. Validate table names in Advanced Hunting before production use.
+
+DeviceInfo
+| where Timestamp > ago(7d)
+| summarize LastSeen=max(Timestamp), DeviceCount=dcount(DeviceId) by OSPlatform, OSVersion
+| order by LastSeen desc
